@@ -25,8 +25,8 @@ env:
     value: dev
   - name: API_ADDR
     value: :8080
-  - name: NATS_URL
-    value: nats://nats:4222
+  - name: NATS_ADDR
+    value: nats://nats.ifsweeklyplanner:4222
   - name: OTEL_LOG_LEVEL
     value: debug
 

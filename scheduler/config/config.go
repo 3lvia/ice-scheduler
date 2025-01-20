@@ -21,7 +21,7 @@ func NewConfig() (*Config, error) {
 
 	return &Config{
 		Env:      runtime.Env(get("ENVIRONMENT", string(runtime.Production))),
-		NatsConn: get("NATS_URL", nats.DefaultURL),
+		NatsConn: get("NATS_ADDR", nats.DefaultURL),
 		ApiAddr:  get("API_ADDR", ":8080"),
 	}, nil
 }

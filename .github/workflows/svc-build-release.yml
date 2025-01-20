@@ -58,3 +58,30 @@ jobs:
           trivy-upload-report: 'false'
           trivy-post-comment: 'false'
           AZURE_CLIENT_ID: ${{ vars.ACR_CLIENT_ID }}
+
+  deploy-dev:
+    name: Deploy Dev
+    # Require all jobs below to be successful before running this job.
+    # Any of these can be commented out or removed if you want to deploy anyway.
+    needs:
+      - analyze
+      - build-scan
+    runs-on: elvia-runner
+    permissions:
+      contents: read
+      id-token: write
+    # Limits the number of concurrent runs of this job to one, but DOES NOT cancel any in progress.
+    concurrency:
+      group: '${{ github.workflow }}-${{ github.ref }}-deploy-dev'
+    environment: dev
+    steps:
+      - uses: 3lvia/core-github-actions-templates/deploy@trunk
+        with:
+          name: ${{ env.APPLICATION_NAME }}
+          namespace: ${{ env.SYSTEM_NAME }}
+          environment: 'dev'
+          helm-values-file: ${{ env.HELM_VALUES_FILE }}
+          # Will post to the Slack channel of your system if the deployment fails.
+          # Can be commented out if you don't want this.
+#          slack-channel: '#team-${{ env.SYSTEM_NAME }}-alerts'
+          AZURE_CLIENT_ID: ${{ vars.AKS_CLIENT_ID }}
