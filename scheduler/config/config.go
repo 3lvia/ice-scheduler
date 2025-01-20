@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"elvia.io/scheduler/internal/runtime"
+	"github.com/ice-scheduler/scheduler/internal/runtime"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 )
@@ -17,7 +17,7 @@ type Config struct {
 }
 
 func NewConfig() (*Config, error) {
-	_ = godotenv.Load(".Env")
+	_ = godotenv.Load(".env")
 
 	return &Config{
 		Env:      runtime.Env(get("ENVIRONMENT", string(runtime.Production))),

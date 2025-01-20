@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"elvia.io/scheduler/internal/scheduler"
-	"elvia.io/scheduler/pkg/tracemsg"
+	"github.com/ice-scheduler/scheduler/internal/scheduler"
+	"github.com/ice-scheduler/scheduler/pkg/tracemsg"
 	"github.com/nats-io/nats.go"
 )
 

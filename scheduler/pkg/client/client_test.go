@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	scheduler2 "elvia.io/scheduler/internal/scheduler"
+	scheduler2 "github.com/ice-scheduler/scheduler/internal/scheduler"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"

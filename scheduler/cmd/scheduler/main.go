@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"elvia.io/scheduler/api"
-	"elvia.io/scheduler/config"
-	"elvia.io/scheduler/internal/observability"
-	"elvia.io/scheduler/internal/runtime"
-	"elvia.io/scheduler/internal/scheduler"
+	"github.com/ice-scheduler/scheduler/api"
+	"github.com/ice-scheduler/scheduler/config"
+	"github.com/ice-scheduler/scheduler/internal/observability"
+	"github.com/ice-scheduler/scheduler/internal/runtime"
+	"github.com/ice-scheduler/scheduler/internal/scheduler"
 	"github.com/nats-io/nats.go"
 )
 

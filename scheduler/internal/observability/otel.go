@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	runtime2 "elvia.io/scheduler/internal/runtime"
+	runtime2 "github.com/ice-scheduler/scheduler/internal/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
@@ -14,7 +14,7 @@ import (
 
 const TraceNamespace = "ice"
 const TraceServiceName = TraceNamespace + "." + "scheduler"
-const TracerName = "elvia.io/scheduler"
+const TracerName = "github.com/ice-scheduler/scheduler"
 
 func Configure(ctx context.Context, env runtime2.Env) (shutdown func(context.Context) error, err error) {
 	r, err := resource.Merge(

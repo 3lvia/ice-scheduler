@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	"elvia.io/scheduler/internal/observability"
-	"elvia.io/scheduler/pkg/tracemsg"
+	"github.com/ice-scheduler/scheduler/internal/observability"
+	"github.com/ice-scheduler/scheduler/pkg/tracemsg"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/otel"

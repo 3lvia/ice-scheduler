@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	"elvia.io/scheduler/internal/observability"
+	"github.com/ice-scheduler/scheduler/internal/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
