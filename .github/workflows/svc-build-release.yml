@@ -4,12 +4,14 @@ on:
   push:
     branches: [trunk]
     paths:
+      - '.github/workflows/svc-build-release.yml'
       - '.github/deploy/svc-values.yml'
       - 'scheduler/**/*.go'
       - 'scheduler/Dockerfile'
   pull_request:
     branches: [trunk]
     paths:
+      - '.github/workflows/svc-build-release.yml'
       - '.github/deploy/svc-values.yml'
       - 'scheduler/**/*.go'
       - 'scheduler/Dockerfile'
