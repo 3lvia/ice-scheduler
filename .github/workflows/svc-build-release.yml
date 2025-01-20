@@ -55,6 +55,6 @@ jobs:
           name: ${{ env.APPLICATION_NAME }}
           namespace: ${{ env.SYSTEM_NAME }}
           project-file: ${{ env.PROJECT_FILE }}
-          trivy-upload-report: 'true'
-          trivy-post-comment: 'true'
+          trivy-upload-report: 'false'
+          trivy-post-comment: 'false'
           AZURE_CLIENT_ID: ${{ vars.ACR_CLIENT_ID }}
