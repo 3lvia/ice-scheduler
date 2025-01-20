@@ -1,0 +1,31 @@
+services:
+  nats:
+    image: nats:alpine
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: -js -m 8222
+    profiles:
+      - default
+      - test
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - nats
+    environment:
+      - NATS_URL=nats://nats:4222
+    profiles:
+        - default
+#  nats_dashboard:
+#    image: mdawar/nats-dashboard
+#    ports:
+#      - "8000:80"
+#    environment:
+#      - NATS_SERVER=nats://nats:4222
+#    depends_on:
+#        - nats
+#    profiles:
+#      - default
+#      - test
