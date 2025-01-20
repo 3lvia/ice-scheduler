@@ -4,17 +4,15 @@ on:
   push:
     branches: [trunk]
     paths:
-      - 'scheduler/**'
       - '.github/deploy/svc-values.yml'
-    paths-ignore:
-      - 'scheduler/.gitignore'
+      - 'scheduler/**/*.go'
+      - 'scheduler/Dockerfile'
   pull_request:
     branches: [trunk]
     paths:
-      - 'scheduler/**'
       - '.github/deploy/svc-values.yml'
-    paths-ignore:
-      - 'scheduler/.gitignore'
+      - 'scheduler/**/*.go'
+      - 'scheduler/Dockerfile'
 
 env:
   SYSTEM_NAME: 'ice'
