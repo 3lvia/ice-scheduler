@@ -1,4 +1,4 @@
-module elvia.io/scheduler
+module github.com/ice-scheduler/scheduler
 
 go 1.23.4
 
