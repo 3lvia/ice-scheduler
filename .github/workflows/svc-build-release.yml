@@ -5,10 +5,16 @@ on:
     branches: [trunk]
     paths:
       - 'scheduler/**'
+      - '.github/deploy/svc-values.yml'
+    paths-ignore:
+      - 'scheduler/.gitignore'
   pull_request:
     branches: [trunk]
     paths:
       - 'scheduler/**'
+      - '.github/deploy/svc-values.yml'
+    paths-ignore:
+      - 'scheduler/.gitignore'
 
 env:
   SYSTEM_NAME: 'ice'
