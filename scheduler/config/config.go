@@ -11,18 +11,20 @@ import (
 )
 
 type Config struct {
-	Env      runtime.Env
-	NatsConn string
-	ApiAddr  string
+	Env       runtime.Env
+	VaultAddr string
+	NatsAddr  string
+	ApiAddr   string
 }
 
-func NewConfig() (*Config, error) {
+func New() (*Config, error) {
 	_ = godotenv.Load(".env")
 
 	return &Config{
-		Env:      runtime.Env(get("ENVIRONMENT", string(runtime.Production))),
-		NatsConn: get("NATS_ADDR", nats.DefaultURL),
-		ApiAddr:  get("API_ADDR", ":8080"),
+		Env:       runtime.Env(get("ENVIRONMENT", string(runtime.Production))),
+		VaultAddr: get("VAULT_ADDR", ""),
+		NatsAddr:  get("NATS_ADDR", nats.DefaultURL),
+		ApiAddr:   get("API_ADDR", ":8080"),
 	}, nil
 }
 
