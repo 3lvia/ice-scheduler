@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ice-scheduler/scheduler/internal/observability"
-	"github.com/ice-scheduler/scheduler/pkg/tracemsg"
+	"github.com/ice-scheduler/scheduler/internal/tracemsg"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/otel"
@@ -39,7 +39,7 @@ type Scheduler struct {
 	installer *Installer
 }
 
-func NewScheduler(ctx context.Context, nc *nats.Conn) (*Scheduler, error) {
+func New(ctx context.Context, nc *nats.Conn) (*Scheduler, error) {
 	js, err := jetstream.New(nc)
 	if err != nil {
 		return nil, err

@@ -67,8 +67,6 @@ jobs:
 
   deploy-dev:
     name: Deploy Dev
-    # Require all jobs below to be successful before running this job.
-    # Any of these can be commented out or removed if you want to deploy anyway.
     needs:
       - analyze
       - build-scan
@@ -89,5 +87,5 @@ jobs:
           helm-values-file: ${{ env.HELM_VALUES_FILE }}
           # Will post to the Slack channel of your system if the deployment fails.
           # Can be commented out if you don't want this.
-#          slack-channel: '#team-${{ env.SYSTEM_NAME }}-alerts'
+          # slack-channel: '#team-${{ env.SYSTEM_NAME }}-alerts'
           AZURE_CLIENT_ID: ${{ vars.AKS_CLIENT_ID }}

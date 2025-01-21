@@ -50,7 +50,7 @@ func TestWithNATS(t *testing.T) {
 
 	nc, js := bootstrapNATS(t, ctx)
 
-	scheduler, err := NewScheduler(ctx, nc)
+	scheduler, err := New(ctx, nc)
 	require.NoError(t, err)
 
 	cleanup, err := scheduler.Start()

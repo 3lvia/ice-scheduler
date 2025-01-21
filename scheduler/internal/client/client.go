@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ice-scheduler/scheduler/internal/scheduler"
-	"github.com/ice-scheduler/scheduler/pkg/tracemsg"
+	"github.com/ice-scheduler/scheduler/internal/tracemsg"
+	"github.com/ice-scheduler/scheduler/scheduler"
 	"github.com/nats-io/nats.go"
 )
 

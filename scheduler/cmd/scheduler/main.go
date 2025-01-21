@@ -14,7 +14,7 @@ import (
 	"github.com/ice-scheduler/scheduler/config"
 	"github.com/ice-scheduler/scheduler/internal/observability"
 	"github.com/ice-scheduler/scheduler/internal/runtime"
-	"github.com/ice-scheduler/scheduler/internal/scheduler"
+	"github.com/ice-scheduler/scheduler/scheduler"
 	"github.com/nats-io/nats.go"
 )
 
@@ -45,7 +45,7 @@ func main() {
 
 	slog.InfoContext(ctx, "Connected to nats server")
 
-	handler, err := scheduler.NewScheduler(ctx, nc)
+	handler, err := scheduler.New(ctx, nc)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to create scheduler", "error", err)
 		panic(err)
