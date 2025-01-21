@@ -38,6 +38,8 @@ func main() {
 
 	var secrets = &config.Secrets{}
 	if cfg.VaultAddr != "" {
+		slog.InfoContext(ctx, "loading secrets from vault", "vault_addr", cfg.VaultAddr)
+
 		vault, err := config.NewVault(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to configure vault", "error", err)
