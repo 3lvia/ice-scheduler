@@ -20,11 +20,6 @@ type Config struct {
 func New() (*Config, error) {
 	_ = godotenv.Load(".env")
 
-	// log all environment variables
-	for k, e := range os.Environ() {
-		fmt.Printf("%s=%s\n", k, e)
-	}
-
 	return &Config{
 		Env:       runtime.Env(get("ENVIRONMENT", string(runtime.Production))),
 		VaultAddr: get("VAULT_ADDR", ""),

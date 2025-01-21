@@ -29,6 +29,8 @@ env:
     value: nats://nats.ifsweeklyplanner:4222
   - name: OTEL_LOG_LEVEL
     value: debug
+  - name: VAULT_ADDR
+    value: https://vault.dev-elvia.io
 
 ## Subdomains are created in https://github.com/3lvia/dns-terraform.
 ## The CLI does not currently support creating subdomains automatically.
