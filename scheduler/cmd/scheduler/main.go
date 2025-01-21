@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -52,7 +53,8 @@ func main() {
 			panic(err)
 		}
 
-		slog.InfoContext(ctx, "loaded secrets from vault", "secrets", secrets)
+		slog.InfoContext(ctx, "loaded secrets from vault")
+		fmt.Printf("NatsToken: %s\n", secrets.NatsToken)
 	}
 
 	nc, err := nats.Connect(cfg.NatsAddr, nats.Token(secrets.NatsToken))
