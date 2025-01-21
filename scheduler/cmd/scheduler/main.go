@@ -52,7 +52,7 @@ func main() {
 			panic(err)
 		}
 
-		slog.InfoContext(ctx, "loaded secrets from vault")
+		slog.InfoContext(ctx, "loaded secrets from vault", "secrets", secrets)
 	}
 
 	nc, err := nats.Connect(cfg.NatsAddr, nats.Token(secrets.NatsToken))
