@@ -31,6 +31,10 @@ env:
     value: debug
   - name: VAULT_ADDR
     value: https://vault.dev-elvia.io
+  - name: ROLE
+    value: "scheduler"
+  - name: MOUNT_PATH
+    value: "kubernetes/runtimeservice/ice/scheduler"
 
 ## Subdomains are created in https://github.com/3lvia/dns-terraform.
 ## The CLI does not currently support creating subdomains automatically.
