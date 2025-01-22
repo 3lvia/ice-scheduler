@@ -38,7 +38,7 @@ func main() {
 
 	var secrets = &config.Secrets{}
 	if cfg.VaultAddr != "" {
-		slog.InfoContext(ctx, "loading secrets from vault", "vault_addr", cfg.VaultAddr)
+		slog.InfoContext(ctx, "vault addr set, loading secrets", "vault_addr", cfg.VaultAddr)
 
 		vault, err := config.NewVault(ctx)
 		if err != nil {
@@ -52,7 +52,7 @@ func main() {
 			panic(err)
 		}
 
-		slog.InfoContext(ctx, "loaded secrets from vault", "token_len", len(secrets.NatsToken))
+		slog.InfoContext(ctx, "loaded secrets from vault")
 	}
 
 	nc, err := nats.Connect(cfg.NatsAddr, nats.Token(secrets.NatsToken))
