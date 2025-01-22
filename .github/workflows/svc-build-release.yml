@@ -43,7 +43,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: elvia-runner
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         go-version: [ '1.23.x' ]
@@ -54,6 +54,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+#      - uses: docker-practice/actions-setup-docker@v1
+#        timeout-minutes: 12
       - name: Dir
         run: |
           cd scheduler
