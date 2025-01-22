@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"os"
 	"testing"
@@ -48,7 +47,7 @@ func TestWithNATS(t *testing.T) {
 		Level: slog.LevelDebug,
 	})))
 
-	nc, js := bootstrapNATS(t, ctx)
+	nc, _ := bootstrapNATS(t, ctx)
 
 	scheduler, err := New(ctx, nc)
 	require.NoError(t, err)
@@ -73,15 +72,19 @@ func TestWithNATS(t *testing.T) {
 		expectedTime := time.Now().Add(2 * time.Second)
 		schedulerMsg := ScheduledMessage{
 			Name:    "test_1",
+			Subject: "test.1",
 			At:      expectedTime,
 			Payload: []byte("hello"),
 		}
 
-		schedulerMsgBytes, err := json.Marshal(schedulerMsg)
+		err = scheduler.installSchedule(ctx, &schedulerMsg)
 		require.NoError(t, err)
 
-		_, err = js.Publish(ctx, "scheduled.test.1", schedulerMsgBytes)
-		require.NoError(t, err)
+		// schedulerMsgBytes, err := json.Marshal(schedulerMsg)
+		// require.NoError(t, err)
+		//
+		// _, err = js.Publish(ctx, "scheduled.test.1", schedulerMsgBytes)
+		// require.NoError(t, err)
 
 		select {
 		case msg := <-resultChan:
@@ -108,15 +111,19 @@ func TestWithNATS(t *testing.T) {
 		expectedTime := time.Now()
 		schedulerMsg := ScheduledMessage{
 			Name:    "test_2",
+			Subject: "test.2",
 			At:      expectedTime,
 			Payload: []byte("hello"),
 		}
 
-		schedulerMsgBytes, err := json.Marshal(schedulerMsg)
+		err = scheduler.installSchedule(ctx, &schedulerMsg)
 		require.NoError(t, err)
 
-		_, err = js.Publish(ctx, "scheduled.test.2", schedulerMsgBytes)
-		require.NoError(t, err)
+		// schedulerMsgBytes, err := json.Marshal(schedulerMsg)
+		// require.NoError(t, err)
+
+		// _, err = js.Publish(ctx, "scheduled.test.2", schedulerMsgBytes)
+		// require.NoError(t, err)
 
 		select {
 		case msg := <-resultChan:
@@ -143,25 +150,29 @@ func TestWithNATS(t *testing.T) {
 
 		schedulerMsg := ScheduledMessage{
 			Name:    "test_3",
+			Subject: "test.3",
 			At:      time.Now(),
 			Payload: []byte("hello"),
 			RepeatPolicy: &RepeatPolicy{
 				Times:    expectedResult - 1,
-				Interval: 1 * time.Second,
+				Interval: 5 * time.Second,
 			},
 		}
 
-		schedulerMsgBytes, err := json.Marshal(schedulerMsg)
+		err = scheduler.installSchedule(ctx, &schedulerMsg)
 		require.NoError(t, err)
 
-		_, err = js.Publish(ctx, "scheduled.test.3", schedulerMsgBytes)
-		require.NoError(t, err)
+		// schedulerMsgBytes, err := json.Marshal(schedulerMsg)
+		// require.NoError(t, err)
+		//
+		// _, err = js.Publish(ctx, "scheduled.test.3", schedulerMsgBytes)
+		// require.NoError(t, err)
 
 		for i := 0; i < expectedResult; i++ {
 			select {
 			case msg := <-resultChan:
 				require.Equal(t, "hello", string(msg.Data))
-			case <-time.After(5 * time.Second):
+			case <-time.After(10 * time.Second):
 				t.Fatal("timed out waiting for message")
 			}
 		}

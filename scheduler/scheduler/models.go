@@ -8,8 +8,8 @@ type RepeatPolicy struct {
 	Interval time.Duration `json:"interval"`
 
 	// Times is the number of times the message should be sent.
-	// If Times is 0, the message is sent indefinitely.
-	Times uint `json:"times"`
+	// If Times is negative, the message is sent indefinitely.
+	Times int `json:"times"`
 }
 
 // ScheduledMessage is the data transfer object for the scheduled messages.

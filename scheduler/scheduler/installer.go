@@ -38,7 +38,7 @@ func (i *Installer) Install(ctx context.Context, message *ScheduledMessage) erro
 	}
 
 	if message.RepeatPolicy != nil {
-		if message.RepeatPolicy.Interval <= 5*time.Second {
+		if message.RepeatPolicy.Interval < 5*time.Second {
 			return ErrInvalidInterval
 		}
 	}

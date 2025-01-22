@@ -89,7 +89,11 @@ func (s *Scheduler) install(ctx context.Context, msg *nats.Msg) error {
 		return errors.Join(errors.New("failed to unmarshal message"), err)
 	}
 
-	err = s.installer.Install(ctx, &scheduledMsg)
+	return s.installSchedule(ctx, &scheduledMsg)
+}
+
+func (s *Scheduler) installSchedule(ctx context.Context, scheduledMsg *ScheduledMessage) error {
+	err := s.installer.Install(ctx, scheduledMsg)
 	if err != nil {
 		return errors.Join(errors.New("failed to install message"), err)
 	}
@@ -221,14 +225,14 @@ func (s *Scheduler) consume(ctx context.Context, msg jetstream.Msg) {
 	}
 	slog.DebugContext(ctx, "received a JetStream message", "seq", meta.Sequence.Stream)
 
-	// remove the "scheduled." prefix from the subject
-	subject := msg.Subject()[10:]
+	// remove the "scheduled." prefix from the name
+	name := msg.Subject()[10:]
 
-	stored, rev, err := s.store.Get(ctx, subject)
+	stored, rev, err := s.store.Get(ctx, name)
 
 	// if key not found, it has been uninstalled
 	if errors.Is(err, jetstream.ErrKeyNotFound) {
-		slog.InfoContext(ctx, "message was uninstalled", "name", subject)
+		slog.InfoContext(ctx, "message was uninstalled", "name", name)
 		if err = msg.Ack(); err != nil {
 			span.SetStatus(codes.Error, "Failed to ACK message")
 			slog.ErrorContext(ctx, "failed to ACK message", "error", err)
@@ -276,7 +280,7 @@ func (s *Scheduler) consume(ctx context.Context, msg jetstream.Msg) {
 		return
 	}
 
-	if err = s.forward(ctx, subject, scheduledMsg.Payload); err != nil {
+	if err = s.forward(ctx, scheduledMsg.Subject, scheduledMsg.Payload); err != nil {
 		span.SetStatus(codes.Error, "Failed to publish message")
 		slog.ErrorContext(ctx, "failed to publish message", "error", err)
 		if err = msg.Nak(); err != nil {
@@ -287,8 +291,8 @@ func (s *Scheduler) consume(ctx context.Context, msg jetstream.Msg) {
 	}
 
 	// If there is no repeat policy, or this was the last repeat count, purge the message
-	// Note: a count of 0 means the message is sent indefinitely
-	if scheduledMsg.RepeatPolicy == nil || scheduledMsg.RepeatPolicy.Times == 1 {
+	// Note: a negative Times means the message is sent indefinitely
+	if scheduledMsg.RepeatPolicy == nil || scheduledMsg.RepeatPolicy.Times == 0 {
 		if err = s.store.Purge(ctx, scheduledMsg.Name); err != nil {
 			slog.ErrorContext(ctx, "failed to purge message from store", "error", err)
 		}
