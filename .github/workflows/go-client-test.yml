@@ -63,7 +63,7 @@ jobs:
           name: Go-results-${{ matrix.go-version }}
           path: tests-${{ matrix.go-version }}.json
       - name: Prepare Test Report
-        run: go-ctrf-json-reporter -o ctrf-${{ matrix.go-version }}.json < tests-${{ matrix.go-version }}.json
+        run: go-ctrf-json-reporter -o ${{ github.workspace }}/ctrf-${{ matrix.go-version }}.json < tests-${{ matrix.go-version }}.json
         if: always()
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1

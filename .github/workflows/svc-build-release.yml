@@ -20,8 +20,11 @@ on:
       - 'scheduler/go.mod'
       - 'scheduler/go.sum'
 
+defaults:
+  run:
+    working-directory: ./scheduler
+
 env:
-  PROJECT_PATH: 'scheduler'
   SYSTEM_NAME: 'ice'
   APPLICATION_NAME: 'scheduler'
   PROJECT_FILE: 'go.mod'
@@ -42,8 +45,6 @@ jobs:
     steps:
       - uses: 3lvia/core-github-actions-templates/analyze@trunk
         with:
-          # This can be set to a more specific path if you want to analyze only a part of the repository.
-          working-directory: ${{ env.PROJECT_PATH }}
           language: 'go'
 
   test:
@@ -59,7 +60,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-          cache-dependency-path: ${{ env.PROJECT_PATH }}/go.sum
+          cache-dependency-path: go.sum
       - name: Test with Go
         run: |
           cd ${{ env.PROJECT_PATH }}
@@ -68,7 +69,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Go-results-${{ matrix.go-version }}
-          path: ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+          path: TestResults-${{ matrix.go-version }}.json
 
   build-scan:
     name: Build and Scan
@@ -89,7 +90,7 @@ jobs:
         with:
           name: ${{ env.APPLICATION_NAME }}
           namespace: ${{ env.SYSTEM_NAME }}
-          project-file: ${{ env.PROJECT_PATH }}/${{ env.PROJECT_FILE }}
+          project-file: ${{ env.PROJECT_FILE }}
           trivy-upload-report: 'false'
           trivy-post-comment: 'false'
           AZURE_CLIENT_ID: ${{ vars.ACR_CLIENT_ID }}
