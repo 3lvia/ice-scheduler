@@ -58,9 +58,7 @@ jobs:
           go mod download
           go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
       - name: Test with Go
-        run: |
-          cd ${{ env.PROJECT_PATH }}
-          go test -v -json ./... > TestResults-${{ matrix.go-version }}.json
+        run: go test -v -json ${{ env.PROJECT_PATH }}/... > ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
@@ -73,4 +71,7 @@ jobs:
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: ${{ env.PROJECT_PATH }}/ctrf-${{ matrix.go-version }}.json
+          pull-request: ${{ github.event_name == 'pull_request' }}
+          on-fail-only: true
+          exit-on-fail: true
         if: always()
