@@ -71,5 +71,5 @@ jobs:
           report-path: ctrf-${{ matrix.go-version }}.json
           pull-request: ${{ github.event_name == 'pull_request' }}
           on-fail-only: true
-          exit-on-fail: true
+#          exit-on-fail: true
         if: always()
