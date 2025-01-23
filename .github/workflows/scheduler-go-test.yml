@@ -1,4 +1,4 @@
-name: scheduler.go test
+name: Scheduler Go Client Test
 
 on:
   push:

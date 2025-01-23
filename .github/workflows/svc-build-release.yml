@@ -1,4 +1,4 @@
-name: Service Build and release
+name: Service Build and Release
 
 on:
   push:

@@ -21,7 +21,7 @@ const (
 	InstallSubject = "scheduler.install"
 
 	// UninstallSubject is the subject for uninstalling a message.
-	UninstallSubject = "scheduler.uninstall"
+	UninstallSubject = "scheduler.uninstall.*"
 )
 
 type Schedule struct {
@@ -114,18 +114,15 @@ func (s *Scheduler) installSchedule(ctx context.Context, scheduledMsg *Scheduled
 }
 
 func (s *Scheduler) uninstall(ctx context.Context, msg *nats.Msg) error {
-	var scheduledMsg ScheduledMessage
-	err := json.Unmarshal(msg.Data, &scheduledMsg)
+	// remove the "scheduler.uninstall." prefix from the subject
+	name := msg.Subject[18:]
+
+	err := s.installer.Uninstall(ctx, name)
 	if err != nil {
 		return err
 	}
 
-	err = s.installer.Uninstall(ctx, &scheduledMsg)
-	if err != nil {
-		return err
-	}
-
-	slog.InfoContext(ctx, "message uninstalled", "name", scheduledMsg.Name)
+	slog.InfoContext(ctx, "message uninstalled", "name", name)
 	return nil
 }
 

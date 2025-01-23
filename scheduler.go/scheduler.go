@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/3lvia/ice-scheduler/scheduler.go/tracemsg"
@@ -58,18 +59,8 @@ func (c *Scheduler) Install(ctx context.Context, name string, at time.Time, payl
 
 // Uninstall uninstalls a scheduled message
 func (c *Scheduler) Uninstall(ctx context.Context, name string) error {
-	s := ScheduledMessage{
-		Name: name,
-	}
-
-	d, err := json.Marshal(s)
-	if err != nil {
-		return err
-	}
-
 	resp, err := c.nc.RequestMsgWithContext(ctx, &nats.Msg{
-		Subject: "scheduler.uninstall",
-		Data:    d,
+		Subject: fmt.Sprintf("scheduler.uninstall.%s", name),
 		Header:  tracemsg.NewHeader(ctx),
 	})
 	if err != nil {

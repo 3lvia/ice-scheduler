@@ -84,11 +84,11 @@ func (i *Installer) Install(ctx context.Context, message *ScheduledMessage) erro
 	return nil
 }
 
-func (i *Installer) Uninstall(ctx context.Context, message *ScheduledMessage) error {
+func (i *Installer) Uninstall(ctx context.Context, name string) error {
 	ctx, span := i.tracer.Start(ctx, "scheduler.installer.uninstall")
 	defer span.End()
 
-	stored, _, err := i.store.Get(ctx, message.Name)
+	stored, _, err := i.store.Get(ctx, name)
 	if errors.Is(err, ErrKeyNotFound) {
 		return nil
 	}
@@ -101,7 +101,7 @@ func (i *Installer) Uninstall(ctx context.Context, message *ScheduledMessage) er
 		return nil
 	}
 
-	err = i.store.Purge(ctx, message.Name)
+	err = i.store.Purge(ctx, name)
 	if err != nil {
 		return ErrFailedToPurgeMessage
 	}
