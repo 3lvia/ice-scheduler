@@ -80,12 +80,6 @@ func TestWithNATS(t *testing.T) {
 		err = scheduler.installSchedule(ctx, &schedulerMsg)
 		require.NoError(t, err)
 
-		// schedulerMsgBytes, err := json.Marshal(schedulerMsg)
-		// require.NoError(t, err)
-		//
-		// _, err = js.Publish(ctx, "scheduled.test.1", schedulerMsgBytes)
-		// require.NoError(t, err)
-
 		select {
 		case msg := <-resultChan:
 			require.WithinDuration(t, expectedTime, time.Now(), 250*time.Millisecond)
@@ -118,12 +112,6 @@ func TestWithNATS(t *testing.T) {
 
 		err = scheduler.installSchedule(ctx, &schedulerMsg)
 		require.NoError(t, err)
-
-		// schedulerMsgBytes, err := json.Marshal(schedulerMsg)
-		// require.NoError(t, err)
-
-		// _, err = js.Publish(ctx, "scheduled.test.2", schedulerMsgBytes)
-		// require.NoError(t, err)
 
 		select {
 		case msg := <-resultChan:
@@ -162,12 +150,6 @@ func TestWithNATS(t *testing.T) {
 		err = scheduler.installSchedule(ctx, &schedulerMsg)
 		require.NoError(t, err)
 
-		// schedulerMsgBytes, err := json.Marshal(schedulerMsg)
-		// require.NoError(t, err)
-		//
-		// _, err = js.Publish(ctx, "scheduled.test.3", schedulerMsgBytes)
-		// require.NoError(t, err)
-
 		for i := 0; i < expectedResult; i++ {
 			select {
 			case msg := <-resultChan:
@@ -178,47 +160,53 @@ func TestWithNATS(t *testing.T) {
 		}
 	})
 
-	// t.Run("Scheduled message with same name should update the existing message", func(t *testing.T) {
-	// 	t.Parallel()
-	//
-	// 	resultChan := make(chan *nats.Msg, 1)
-	// 	sub, err := nc.Subscribe("test.4", func(msg *nats.Msg) {
-	// 		resultChan <- msg
-	// 	})
-	// 	require.NoError(t, err)
-	// 	t.Cleanup(func() {
-	// 		_ = sub.Unsubscribe()
-	// 	})
-	//
-	// 	expectedTime := time.Now().Add(2 * time.Second)
-	// 	schedulerMsg := ScheduledMessage{
-	// 		Name:    "test_4",
-	// 		At:      expectedTime,
-	// 		Payload: []byte("hello"),
-	// 	}
-	//
-	// 	schedulerMsgBytes, err := json.Marshal(schedulerMsg)
-	// 	require.NoError(t, err)
-	//
-	// 	_, err = js.Publish(ctx, "scheduled.test.4", schedulerMsgBytes)
-	// 	require.NoError(t, err)
-	//
-	// 	// Update the message
-	// 	schedulerMsg.At = time.Now().Add(3 * time.Second)
-	// 	schedulerMsg.Payload = []byte("world")
-	// 	schedulerMsg.Rev = 1
-	// 	schedulerMsgBytes, err = json.Marshal(schedulerMsg)
-	// 	require.NoError(t, err)
-	//
-	// 	_, err = js.Publish(ctx, "scheduled.test.4", schedulerMsgBytes)
-	//
-	// 	select {
-	// 	case msg := <-resultChan:
-	// 		require.Equal(t, "world", string(msg.Data))
-	// 	case <-time.After(5 * time.Second):
-	// 		t.Fatal("timed out waiting for message")
-	// 	}
-	// })
+	t.Run("Scheduled message with same name should update the existing message", func(t *testing.T) {
+		t.Parallel()
+
+		resultChan := make(chan *nats.Msg, 1)
+		sub, err := nc.Subscribe("test.4", func(msg *nats.Msg) {
+			resultChan <- msg
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			_ = sub.Unsubscribe()
+		})
+
+		expectedTime := time.Now().Add(2 * time.Second)
+		schedulerMsg := ScheduledMessage{
+			Name:    "test_4",
+			Subject: "test.4",
+			At:      expectedTime,
+			Payload: []byte("hello"),
+		}
+
+		err = scheduler.installSchedule(ctx, &schedulerMsg)
+		require.NoError(t, err)
+
+		// schedulerMsgBytes, err := json.Marshal(schedulerMsg)
+		// require.NoError(t, err)
+		//
+		// _, err = js.Publish(ctx, "scheduled.test.4", schedulerMsgBytes)
+		// require.NoError(t, err)
+
+		// Update the message
+		schedulerMsg.At = time.Now().Add(3 * time.Second)
+		schedulerMsg.Payload = []byte("world")
+		schedulerMsg.Rev = 1
+		// schedulerMsgBytes, err = json.Marshal(schedulerMsg)
+		// require.NoError(t, err)
+
+		// _, err = js.Publish(ctx, "scheduled.test.4", schedulerMsgBytes)
+		err = scheduler.installSchedule(ctx, &schedulerMsg)
+		require.NoError(t, err)
+
+		select {
+		case msg := <-resultChan:
+			require.Equal(t, "world", string(msg.Data))
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for message")
+		}
+	})
 
 	// t.Run("Update message with same revision should fail", func(t *testing.T) {
 	// 	t.Parallel()
