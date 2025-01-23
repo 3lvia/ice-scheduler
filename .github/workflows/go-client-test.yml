@@ -16,9 +16,6 @@ on:
       - 'scheduler.go/go.mod'
       - 'scheduler.go/go.sum'
 
-env:
-  PROJECT_PATH: 'scheduler.go'
-
 jobs:
   analyze:
     name: Analyze
@@ -35,7 +32,7 @@ jobs:
       - uses: 3lvia/core-github-actions-templates/analyze@trunk
         with:
           # This can be set to a more specific path if you want to analyze only a part of the repository.
-          working-directory: ${{ env.PROJECT_PATH }}
+          working-directory: ./scheduler.go
           language: 'go'
 
   test:
@@ -44,6 +41,9 @@ jobs:
     strategy:
       matrix:
         go-version: [ '1.23.x' ]
+    defaults:
+      run:
+        working-directory: ./scheduler.go
 
     steps:
       - uses: actions/checkout@v4
@@ -54,23 +54,22 @@ jobs:
           cache-dependency-path: ${{ env.PROJECT_PATH }}/go.sum
       - name: Install Go packages
         run: |
-          cd ${{ env.PROJECT_PATH }}
           go mod download
           go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
       - name: Test with Go
-        run: go test -v -json ${{ env.PROJECT_PATH }}/... > ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+        run: go test -v -json -trace trace-${{ matrix.go-version }}.json ./... > tests-${{ matrix.go-version }}.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
           name: Go-results-${{ matrix.go-version }}
-          path: ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+          path: tests-${{ matrix.go-version }}.json
       - name: Prepare Test Report
-        run: go-ctrf-json-reporter -o ${{ env.PROJECT_PATH }}/ctrf-${{ matrix.go-version }}.json < ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+        run: go-ctrf-json-reporter -o ctrf-${{ matrix.go-version }}.json < tests-${{ matrix.go-version }}.json
         if: always()
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: ${{ env.PROJECT_PATH }}/ctrf-${{ matrix.go-version }}.json
+          report-path: ctrf-${{ matrix.go-version }}.json
           pull-request: ${{ github.event_name == 'pull_request' }}
           on-fail-only: true
           exit-on-fail: true
