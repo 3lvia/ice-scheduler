@@ -8,6 +8,8 @@ on:
       - '.github/deploy/svc-values.yml'
       - 'scheduler/**/*.go'
       - 'scheduler/Dockerfile'
+      - 'scheduler/go.mod'
+      - 'scheduler/go.sum'
   pull_request:
     branches: [trunk]
     paths:
@@ -15,11 +17,14 @@ on:
       - '.github/deploy/svc-values.yml'
       - 'scheduler/**/*.go'
       - 'scheduler/Dockerfile'
+      - 'scheduler/go.mod'
+      - 'scheduler/go.sum'
 
 env:
+  PATH: 'scheduler'
   SYSTEM_NAME: 'ice'
   APPLICATION_NAME: 'scheduler'
-  PROJECT_FILE: 'scheduler/go.mod'
+  PROJECT_FILE: 'go.mod'
   HELM_VALUES_FILE: '.github/deploy/svc-values.yml'
 
 jobs:
@@ -38,7 +43,7 @@ jobs:
       - uses: 3lvia/core-github-actions-templates/analyze@trunk
         with:
           # This can be set to a more specific path if you want to analyze only a part of the repository.
-          working-directory: 'scheduler/'
+          working-directory: ${{ env.PATH }}
           language: 'go'
 
   test:
@@ -54,17 +59,16 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-          cache-dependency-path: scheduler/go.sum
-          go-version-file: scheduler/go.mod
+          cache-dependency-path: ${{ env.PATH }}/go.sum
       - name: Test with Go
         run: |
-          cd scheduler
+          cd ${{ env.PATH }}
           go test -v ./... -json > TestResults-${{ matrix.go-version }}.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
           name: Go-results-${{ matrix.go-version }}
-          path: scheduler/TestResults-${{ matrix.go-version }}.json
+          path: ${{ env.PATH }}/TestResults-${{ matrix.go-version }}.json
 
   build-scan:
     name: Build and Scan
@@ -85,7 +89,7 @@ jobs:
         with:
           name: ${{ env.APPLICATION_NAME }}
           namespace: ${{ env.SYSTEM_NAME }}
-          project-file: ${{ env.PROJECT_FILE }}
+          project-file: ${{ env.PATH }}/${{ env.PROJECT_FILE }}
           trivy-upload-report: 'false'
           trivy-post-comment: 'false'
           AZURE_CLIENT_ID: ${{ vars.ACR_CLIENT_ID }}
