@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"testing"
@@ -78,7 +79,7 @@ func TestClient(t *testing.T) {
 			_ = si.Unsubscribe()
 		})
 
-		su, err := nc.Subscribe("scheduler.uninstall", func(msg *nats.Msg) {
+		su, err := nc.Subscribe(fmt.Sprintf("scheduler.uninstall.%s", name), func(msg *nats.Msg) {
 			header := nats.Header{}
 			header.Add("status", "ok")
 			err = msg.RespondMsg(&nats.Msg{
