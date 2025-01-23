@@ -69,7 +69,7 @@ jobs:
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: ctrf-${{ matrix.go-version }}.json
-          pull-request: ${{ github.event_name == 'pull_request' }}
+#          pull-request: ${{ github.event_name == 'pull_request' }}
           on-fail-only: true
 #          exit-on-fail: true
         if: always()
