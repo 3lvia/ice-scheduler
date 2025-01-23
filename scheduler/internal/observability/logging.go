@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"elvia.io/scheduler/internal/runtime"
+	"github.com/ice-scheduler/scheduler/internal/runtime"
 	"go.opentelemetry.io/contrib/processors/minsev"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/log"

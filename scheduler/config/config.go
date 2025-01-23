@@ -5,24 +5,26 @@ import (
 	"fmt"
 	"os"
 
-	"elvia.io/scheduler/internal/runtime"
+	"github.com/ice-scheduler/scheduler/internal/runtime"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 )
 
 type Config struct {
-	Env      runtime.Env
-	NatsConn string
-	ApiAddr  string
+	Env       runtime.Env
+	VaultAddr string
+	NatsAddr  string
+	ApiAddr   string
 }
 
-func NewConfig() (*Config, error) {
-	_ = godotenv.Load(".Env")
+func New() (*Config, error) {
+	_ = godotenv.Load(".env")
 
 	return &Config{
-		Env:      runtime.Env(get("ENVIRONMENT", string(runtime.Production))),
-		NatsConn: get("NATS_URL", nats.DefaultURL),
-		ApiAddr:  get("API_ADDR", ":8080"),
+		Env:       runtime.Env(get("ENVIRONMENT", string(runtime.Production))),
+		VaultAddr: get("VAULT_ADDR", ""),
+		NatsAddr:  get("NATS_ADDR", nats.DefaultURL),
+		ApiAddr:   get("API_ADDR", ":8080"),
 	}, nil
 }
 

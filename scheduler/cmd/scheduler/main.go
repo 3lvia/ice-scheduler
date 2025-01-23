@@ -10,16 +10,16 @@ import (
 	"syscall"
 	"time"
 
-	"elvia.io/scheduler/api"
-	"elvia.io/scheduler/config"
-	"elvia.io/scheduler/internal/observability"
-	"elvia.io/scheduler/internal/runtime"
-	"elvia.io/scheduler/internal/scheduler"
+	"github.com/ice-scheduler/scheduler/api"
+	"github.com/ice-scheduler/scheduler/config"
+	"github.com/ice-scheduler/scheduler/internal/observability"
+	"github.com/ice-scheduler/scheduler/internal/runtime"
+	"github.com/ice-scheduler/scheduler/scheduler"
 	"github.com/nats-io/nats.go"
 )
 
 func main() {
-	cfg, err := config.NewConfig()
+	cfg, err := config.New()
 	if err != nil {
 		panic(err)
 	}
@@ -34,20 +34,39 @@ func main() {
 
 	_ = runtime.NewLogger(cfg.Env)
 
-	slog.InfoContext(ctx, "Starting scheduler", "env", cfg.Env)
+	slog.InfoContext(ctx, "starting scheduler", "env", cfg.Env)
 
-	nc, err := nats.Connect(cfg.NatsConn)
+	var secrets = &config.Secrets{}
+	if cfg.VaultAddr != "" {
+		slog.InfoContext(ctx, "vault addr set, loading secrets", "vault_addr", cfg.VaultAddr)
+
+		vault, err := config.NewVault(ctx)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to configure vault", "error", err)
+			panic(err)
+		}
+
+		secrets, err = config.NewSecrets(ctx, vault)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to get secrets", "error", err)
+			panic(err)
+		}
+
+		slog.InfoContext(ctx, "loaded secrets from vault")
+	}
+
+	nc, err := nats.Connect(cfg.NatsAddr, nats.Token(secrets.NatsToken))
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to connect to nats server", "error", err)
+		slog.ErrorContext(ctx, "failed to connect to nats server", "error", err)
 		panic(err)
 	}
 	defer nc.Close()
 
-	slog.InfoContext(ctx, "Connected to nats server")
+	slog.InfoContext(ctx, "connected to nats server")
 
-	handler, err := scheduler.NewScheduler(ctx, nc)
+	handler, err := scheduler.New(ctx, nc)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to create scheduler", "error", err)
+		slog.ErrorContext(ctx, "failed to create scheduler", "error", err)
 		panic(err)
 	}
 	shutdown, err := handler.Start()
@@ -66,7 +85,7 @@ func main() {
 			slog.ErrorContext(ctx, "API server stopped unexpectedly", "error", err)
 		}
 	case <-done:
-		slog.InfoContext(ctx, "Shutting down scheduler")
+		slog.InfoContext(ctx, "shutting down scheduler")
 
 		ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 		defer cancel()
@@ -74,5 +93,5 @@ func main() {
 		apiShutdown(ctx)
 	}
 
-	slog.InfoContext(ctx, "Scheduler stopped")
+	slog.InfoContext(ctx, "scheduler stopped")
 }

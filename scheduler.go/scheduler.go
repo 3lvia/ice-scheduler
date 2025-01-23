@@ -1,28 +1,31 @@
-package client
+package scheduler
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
-	"elvia.io/scheduler/internal/scheduler"
-	"elvia.io/scheduler/pkg/tracemsg"
+	"github.com/3lvia/ice-scheduler/scheduler.go/tracemsg"
 	"github.com/nats-io/nats.go"
 )
 
-type Client struct {
+// Scheduler is the interface to interact with the scheduler
+type Scheduler struct {
 	nc *nats.Conn
 }
 
-func NewClient(nc *nats.Conn) (*Client, error) {
-	return &Client{
+// New creates a new instance of Scheduler
+func New(nc *nats.Conn) (*Scheduler, error) {
+	return &Scheduler{
 		nc: nc,
 	}, nil
 }
 
-func (c *Client) Install(ctx context.Context, name string, at time.Time, payload []byte) error {
-	s := scheduler.ScheduledMessage{
+// Install installs a new scheduled message
+func (c *Scheduler) Install(ctx context.Context, name string, at time.Time, payload []byte) error {
+	s := ScheduledMessage{
 		Name:         name,
 		Rev:          0,
 		At:           at,
@@ -54,19 +57,10 @@ func (c *Client) Install(ctx context.Context, name string, at time.Time, payload
 	return nil
 }
 
-func (c *Client) Uninstall(ctx context.Context, name string) error {
-	s := scheduler.ScheduledMessage{
-		Name: name,
-	}
-
-	d, err := json.Marshal(s)
-	if err != nil {
-		return err
-	}
-
+// Uninstall uninstalls a scheduled message
+func (c *Scheduler) Uninstall(ctx context.Context, name string) error {
 	resp, err := c.nc.RequestMsgWithContext(ctx, &nats.Msg{
-		Subject: "scheduler.uninstall",
-		Data:    d,
+		Subject: fmt.Sprintf("scheduler.uninstall.%s", name),
 		Header:  tracemsg.NewHeader(ctx),
 	})
 	if err != nil {

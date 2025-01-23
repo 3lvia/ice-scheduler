@@ -1,0 +1,78 @@
+name: Go Client Test
+
+on:
+  push:
+    branches: [trunk]
+    paths:
+      - '.github/workflows/go-client-test.yml'
+      - 'scheduler.go/**/*.go'
+      - 'scheduler.go/go.mod'
+      - 'scheduler.go/go.sum'
+  pull_request:
+    branches: [trunk]
+    paths:
+      - '.github/workflows/go-client-test.yml'
+      - 'scheduler.go/**/*.go'
+      - 'scheduler.go/go.mod'
+      - 'scheduler.go/go.sum'
+
+defaults:
+  run:
+    working-directory: ./scheduler.go
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: elvia-runner
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    # Limits the number of concurrent runs of this job to one, and cancels any in progress.
+    concurrency:
+      group: '${{ github.workflow }}-${{ github.ref }}-analyze'
+      cancel-in-progress: true
+    steps:
+      - uses: 3lvia/core-github-actions-templates/analyze@trunk
+        with:
+          language: 'go'
+
+  test:
+    name: Test
+    runs-on: elvia-runner
+    strategy:
+      matrix:
+        go-version: [ '1.23.x' ]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache-dependency-path: go.sum
+      - name: Install Go packages
+        run: |
+          go mod download
+          go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
+      - name: Test with Go
+        run: go test -v -json ./... > tests-${{ matrix.go-version }}.json
+      - name: Upload Go test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: Go-results-${{ matrix.go-version }}
+          path: tests-${{ matrix.go-version }}.json
+      - name: Prepare Test Report
+        run: go-ctrf-json-reporter -o ${{ github.workspace }}/ctrf-${{ matrix.go-version }}.json < tests-${{ matrix.go-version }}.json
+        if: always()
+      - name: Publish Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: ctrf-${{ matrix.go-version }}.json
+#          flaky-rate-report: true
+#          pull-request: true
+#          update-comment: true
+#          comment-tag: '${{ github.workflow }}-${{ github.job }}'
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        if: always()

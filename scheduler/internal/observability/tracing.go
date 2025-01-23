@@ -3,7 +3,7 @@ package observability
 import (
 	"context"
 
-	"elvia.io/scheduler/internal/runtime"
+	"github.com/ice-scheduler/scheduler/internal/runtime"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"

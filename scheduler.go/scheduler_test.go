@@ -1,13 +1,14 @@
-package client
+package scheduler
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"testing"
 	"time"
 
-	scheduler2 "elvia.io/scheduler/internal/scheduler"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
@@ -49,22 +50,52 @@ func TestClient(t *testing.T) {
 	})))
 
 	nc, _ := bootstrapNATS(t, ctx)
-
-	scheduler, err := scheduler2.NewScheduler(ctx, nc)
-	require.NoError(t, err)
-
-	cleanup, err := scheduler.Start()
-	require.NoError(t, err)
-	t.Cleanup(cleanup)
-
-	client, err := NewClient(nc)
-	require.NoError(t, err)
+	require.NotEmpty(t, nc)
 
 	name := "scheduler_test"
 
-	err = client.Install(ctx, name, time.Now(), nil)
+	scheduler, err := New(nc)
 	require.NoError(t, err)
 
-	err = client.Uninstall(ctx, name)
-	require.NoError(t, err)
+	t.Run("Should be able to install and uninstall", func(t *testing.T) {
+		t.Parallel()
+
+		si, err := nc.Subscribe("scheduler.install", func(msg *nats.Msg) {
+			var scheduledMsg ScheduledMessage
+			err := json.Unmarshal(msg.Data, &scheduledMsg)
+			require.NoError(t, err)
+
+			require.Equal(t, name, scheduledMsg.Name)
+
+			header := nats.Header{}
+			header.Add("status", "ok")
+			err = msg.RespondMsg(&nats.Msg{
+				Header: header,
+			})
+			require.NoError(t, err)
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			_ = si.Unsubscribe()
+		})
+
+		su, err := nc.Subscribe(fmt.Sprintf("scheduler.uninstall.%s", name), func(msg *nats.Msg) {
+			header := nats.Header{}
+			header.Add("status", "ok")
+			err = msg.RespondMsg(&nats.Msg{
+				Header: header,
+			})
+			require.NoError(t, err)
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			_ = su.Unsubscribe()
+		})
+
+		err = scheduler.Install(ctx, name, time.Now(), nil)
+		require.NoError(t, err)
+
+		err = scheduler.Uninstall(ctx, name)
+		require.NoError(t, err)
+	})
 }
