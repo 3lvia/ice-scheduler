@@ -1,17 +1,17 @@
-name: Scheduler Go Client Test
+name: Go Client Test
 
 on:
   push:
     branches: [trunk]
     paths:
-      - '.github/workflows/scheduler-go-test.yml'
+      - '.github/workflows/go-client-test.yml'
       - 'scheduler.go/**/*.go'
       - 'scheduler.go/go.mod'
       - 'scheduler.go/go.sum'
   pull_request:
     branches: [trunk]
     paths:
-      - '.github/workflows/scheduler-go-test.yml'
+      - '.github/workflows/go-client-test.yml'
       - 'scheduler.go/**/*.go'
       - 'scheduler.go/go.mod'
       - 'scheduler.go/go.sum'
@@ -52,12 +52,23 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
           cache-dependency-path: ${{ env.PROJECT_PATH }}/go.sum
+      - name: Install Go packages
+        run: |
+          cd ${{ env.PROJECT_PATH }}
+          go mod download
+          go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
       - name: Test with Go
         run: |
           cd ${{ env.PROJECT_PATH }}
-          go test -v ./... -json > TestResults-${{ matrix.go-version }}.json
+#          go test -v ./... -json > TestResults-${{ matrix.go-version }}.json
+          go test -v ./... -json | go-ctrf-json-reporter -o TestResults-${{ matrix.go-version }}.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
           name: Go-results-${{ matrix.go-version }}
           path: ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+      - name: Publish Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+        if: always()
