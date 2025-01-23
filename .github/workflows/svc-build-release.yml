@@ -107,8 +107,10 @@ jobs:
     concurrency:
       group: '${{ github.workflow }}-${{ github.ref }}-deploy-dev'
     environment: dev
+    if: github.ref == 'refs/heads/trunk'
     steps:
       - uses: 3lvia/core-github-actions-templates/deploy@trunk
+        if: ${{ github.event_name == 'push' }}
         with:
           name: ${{ env.APPLICATION_NAME }}
           namespace: ${{ env.SYSTEM_NAME }}
