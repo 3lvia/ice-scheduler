@@ -50,7 +50,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-          cache-dependency-path: ${{ env.PROJECT_PATH }}/go.sum
+          cache-dependency-path: go.sum
       - name: Install Go packages
         run: |
           go mod download
@@ -69,7 +69,10 @@ jobs:
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: ctrf-${{ matrix.go-version }}.json
-#          pull-request: ${{ github.event_name == 'pull_request' }}
-          on-fail-only: true
-#          exit-on-fail: true
+          flaky-rate-report: true
+          pull-request: true
+          update-comment: true
+          comment-tag: '${{ github.workflow }}-${{ github.job }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         if: always()
