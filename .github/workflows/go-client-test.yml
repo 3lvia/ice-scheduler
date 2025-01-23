@@ -60,14 +60,17 @@ jobs:
       - name: Test with Go
         run: |
           cd ${{ env.PROJECT_PATH }}
-          go test -v -json ./... | go-ctrf-json-reporter -output TestResults-${{ matrix.go-version }}.json
+          go test -v -json ./... > TestResults-${{ matrix.go-version }}.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
           name: Go-results-${{ matrix.go-version }}
           path: ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+      - name: Prepare Test Report
+        run: go-ctrf-json-reporter -o ${{ env.PROJECT_PATH }}/ctrf-${{ matrix.go-version }}.json < ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+        if: always()
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: ${{ env.PROJECT_PATH }}/TestResults-${{ matrix.go-version }}.json
+          report-path: ${{ env.PROJECT_PATH }}/ctrf-${{ matrix.go-version }}.json
         if: always()
