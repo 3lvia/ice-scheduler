@@ -16,6 +16,10 @@ on:
       - 'scheduler.go/go.mod'
       - 'scheduler.go/go.sum'
 
+defaults:
+  run:
+    working-directory: ./scheduler.go
+
 jobs:
   analyze:
     name: Analyze
@@ -31,8 +35,6 @@ jobs:
     steps:
       - uses: 3lvia/core-github-actions-templates/analyze@trunk
         with:
-          # This can be set to a more specific path if you want to analyze only a part of the repository.
-          working-directory: ./scheduler.go
           language: 'go'
 
   test:
@@ -41,9 +43,6 @@ jobs:
     strategy:
       matrix:
         go-version: [ '1.23.x' ]
-    defaults:
-      run:
-        working-directory: ./scheduler.go
 
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +56,7 @@ jobs:
           go mod download
           go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
       - name: Test with Go
-        run: go test -v -json -trace trace-${{ matrix.go-version }}.json ./... > tests-${{ matrix.go-version }}.json
+        run: go test -v -json ./... > tests-${{ matrix.go-version }}.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
