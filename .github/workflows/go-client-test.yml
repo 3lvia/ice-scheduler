@@ -70,9 +70,9 @@ jobs:
         with:
           report-path: ctrf-${{ matrix.go-version }}.json
           flaky-rate-report: true
-          pull-request: true
-          update-comment: true
-          comment-tag: '${{ github.workflow }}-${{ github.job }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+#          pull-request: true
+#          update-comment: true
+#          comment-tag: '${{ github.workflow }}-${{ github.job }}'
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         if: always()
