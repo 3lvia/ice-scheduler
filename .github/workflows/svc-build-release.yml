@@ -54,6 +54,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+          cache-dependency-path: scheduler/go.sum
+          go-version-file: scheduler/go.mod
       - name: Test with Go
         run: |
           cd scheduler
