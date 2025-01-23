@@ -69,7 +69,7 @@ jobs:
         uses: ctrf-io/github-test-reporter@v1
         with:
           report-path: ctrf-${{ matrix.go-version }}.json
-          flaky-rate-report: true
+#          flaky-rate-report: true
 #          pull-request: true
 #          update-comment: true
 #          comment-tag: '${{ github.workflow }}-${{ github.job }}'
