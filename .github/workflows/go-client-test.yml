@@ -60,8 +60,7 @@ jobs:
       - name: Test with Go
         run: |
           cd ${{ env.PROJECT_PATH }}
-#          go test -v ./... -json > TestResults-${{ matrix.go-version }}.json
-          go test -v ./... -json | go-ctrf-json-reporter -o TestResults-${{ matrix.go-version }}.json
+          go test -v -json ./... | go-ctrf-json-reporter -output TestResults-${{ matrix.go-version }}.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
