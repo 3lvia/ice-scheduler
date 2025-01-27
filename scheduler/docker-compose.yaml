@@ -14,18 +14,13 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - nats
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../docker.env
+    extra_hosts:
+      host.docker.internal: host-gateway
     environment:
-      - NATS_URL=nats://nats:4222
+      - NATS_ADDR=nats://nats:4222
     profiles:
         - default
-#  nats_dashboard:
-#    image: mdawar/nats-dashboard
-#    ports:
-#      - "8000:80"
-#    environment:
-#      - NATS_SERVER=nats://nats:4222
-#    depends_on:
-#        - nats
-#    profiles:
-#      - default
-#      - test

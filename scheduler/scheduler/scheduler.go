@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ice-scheduler/scheduler/internal/observability"
-	"github.com/ice-scheduler/scheduler/internal/tracemsg"
+	"github.com/3lvia/ice-scheduler/scheduler/internal/observability"
+	"github.com/3lvia/ice-scheduler/scheduler/internal/tracemsg"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/otel"
@@ -24,18 +24,12 @@ const (
 	UninstallSubject = "scheduler.uninstall.*"
 )
 
-type Schedule struct {
-	// Delay is the time until the message should be sent.
-	Delay time.Duration
-}
-
 type Scheduler struct {
-	nc       *nats.Conn
-	js       jetstream.JetStream
-	consumer jetstream.Consumer
-	tracer   trace.Tracer
-	store    *Store
-
+	nc        *nats.Conn
+	js        jetstream.JetStream
+	consumer  jetstream.Consumer
+	tracer    trace.Tracer
+	store     *Store
 	installer *Installer
 }
 
@@ -102,7 +96,6 @@ func (s *Scheduler) installSchedule(ctx context.Context, scheduledMsg *Scheduled
 
 	_, err = s.js.PublishMsg(ctx, &nats.Msg{
 		Subject: "scheduled." + scheduledMsg.Name,
-		Header:  tracemsg.NewHeader(ctx),
 	})
 	if err != nil {
 		if err = s.store.Purge(ctx, scheduledMsg.Name); err != nil {
@@ -129,6 +122,8 @@ func (s *Scheduler) uninstall(ctx context.Context, msg *nats.Msg) error {
 func (s *Scheduler) Start() (func(), error) {
 	installSub, err := s.nc.Subscribe(InstallSubject, func(msg *nats.Msg) {
 		ctx := tracemsg.Extract(context.Background(), msg.Header)
+		ctx, span := s.tracer.Start(ctx, "scheduler.install")
+		defer span.End()
 
 		err := s.install(ctx, msg)
 
@@ -161,6 +156,8 @@ func (s *Scheduler) Start() (func(), error) {
 
 	uninstallSub, err := s.nc.Subscribe(UninstallSubject, func(msg *nats.Msg) {
 		ctx := tracemsg.Extract(context.Background(), msg.Header)
+		ctx, span := s.tracer.Start(ctx, "scheduler.uninstall")
+		defer span.End()
 
 		err := s.uninstall(ctx, msg)
 
@@ -193,7 +190,7 @@ func (s *Scheduler) Start() (func(), error) {
 
 	c, err := s.consumer.Consume(func(msg jetstream.Msg) {
 		ctx := tracemsg.Extract(context.Background(), msg.Headers())
-		s.consume(ctx, msg)
+		s.handle(ctx, msg)
 	})
 	if err != nil {
 		return nil, err
@@ -206,8 +203,8 @@ func (s *Scheduler) Start() (func(), error) {
 	}, nil
 }
 
-func (s *Scheduler) consume(ctx context.Context, msg jetstream.Msg) {
-	ctx, span := s.tracer.Start(ctx, "scheduler.consume")
+func (s *Scheduler) handle(ctx context.Context, msg jetstream.Msg) {
+	ctx, span := s.tracer.Start(ctx, "scheduler.handle")
 	defer span.End()
 
 	meta, err := msg.Metadata()
@@ -227,7 +224,8 @@ func (s *Scheduler) consume(ctx context.Context, msg jetstream.Msg) {
 
 	stored, rev, err := s.store.Get(ctx, name)
 
-	// if key not found, it has been uninstalled
+	// if the key is not found, it has been uninstalled
+	// therefore, we ignore the message
 	if errors.Is(err, jetstream.ErrKeyNotFound) {
 		slog.InfoContext(ctx, "message was uninstalled", "name", name)
 		if err = msg.Ack(); err != nil {
@@ -248,21 +246,13 @@ func (s *Scheduler) consume(ctx context.Context, msg jetstream.Msg) {
 
 	scheduledMsg := stored.ScheduledMessage
 
-	schedule, err := s.newSchedule(scheduledMsg)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to create schedule message", "error", err)
-		if err = msg.TermWithReason("Failed to create schedule message"); err != nil {
-			span.SetStatus(codes.Error, "Failed to TERM message")
-			slog.ErrorContext(ctx, "failed to TERM message", "error", err)
-		}
-		return
-	}
+	delay := s.newSchedule(scheduledMsg)
 
 	// if the message is embargoed, delay it
-	if schedule.Delay > 0 {
-		slog.InfoContext(ctx, "message is embargoed", "delay", schedule.Delay)
+	if delay > 0 {
+		slog.InfoContext(ctx, "message is embargoed", "delay", delay)
 
-		if err = msg.NakWithDelay(schedule.Delay); err != nil {
+		if err = msg.NakWithDelay(delay); err != nil {
 			span.SetStatus(codes.Error, "Failed to NAK message with delay")
 			slog.ErrorContext(ctx, "failed to NAK message with delay", "error", err)
 		}
@@ -346,7 +336,6 @@ func (s *Scheduler) reschedule(ctx context.Context, scheduledMsg ScheduledMessag
 	_, err = s.js.PublishMsg(ctx, &nats.Msg{
 		Subject: msg.Subject(),
 		Data:    scheduledMsgData,
-		Header:  tracemsg.NewHeader(ctx),
 	})
 
 	return scheduledMsg, changed, err
@@ -378,11 +367,11 @@ func (s *Scheduler) forward(ctx context.Context, subject string, payload []byte)
 	return nil
 }
 
-func (s *Scheduler) newSchedule(msg ScheduledMessage) (Schedule, error) {
+func (s *Scheduler) newSchedule(msg ScheduledMessage) time.Duration {
 	if time.Now().Before(msg.At) {
 		delay := msg.At.Sub(time.Now())
-		return Schedule{Delay: delay}, nil
+		return delay
 	}
 
-	return Schedule{}, nil
+	return 0
 }

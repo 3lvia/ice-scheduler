@@ -21,7 +21,7 @@ type Store struct {
 func NewStore(ctx context.Context, js jetstream.JetStream) (*Store, error) {
 	kv, err := js.CreateKeyValue(ctx, jetstream.KeyValueConfig{
 		Bucket:      "scheduled_messages",
-		Description: "Store for scheduled messages",
+		Description: "Installed scheduled messages",
 		Storage:     jetstream.FileStorage,
 	})
 	if err != nil {

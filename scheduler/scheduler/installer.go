@@ -3,11 +3,13 @@ package scheduler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"time"
 
-	"github.com/ice-scheduler/scheduler/internal/observability"
+	"github.com/3lvia/ice-scheduler/scheduler/internal/observability"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -26,8 +28,13 @@ func NewInstaller(store *Store) *Installer {
 }
 
 func (i *Installer) Install(ctx context.Context, message *ScheduledMessage) error {
-	ctx, span := i.tracer.Start(ctx, "scheduler.installer.Install")
+	ctx, span := i.tracer.Start(ctx, "installer.Install")
 	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("name", message.Name),
+		attribute.String("rev", fmt.Sprintf("%d", message.Rev)),
+	)
 
 	if message.Name == "" || !nameRegex.MatchString(message.Name) {
 		return ErrInvalidName
@@ -85,8 +92,10 @@ func (i *Installer) Install(ctx context.Context, message *ScheduledMessage) erro
 }
 
 func (i *Installer) Uninstall(ctx context.Context, name string) error {
-	ctx, span := i.tracer.Start(ctx, "scheduler.installer.uninstall")
+	ctx, span := i.tracer.Start(ctx, "installer.uninstall")
 	defer span.End()
+
+	span.SetAttributes(attribute.String("name", name))
 
 	stored, _, err := i.store.Get(ctx, name)
 	if errors.Is(err, ErrKeyNotFound) {

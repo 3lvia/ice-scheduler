@@ -3,8 +3,9 @@ package observability
 import (
 	"context"
 	"errors"
+	"os"
 
-	runtime2 "github.com/ice-scheduler/scheduler/internal/runtime"
+	"github.com/3lvia/ice-scheduler/scheduler/internal/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
@@ -14,9 +15,15 @@ import (
 
 const TraceNamespace = "ice"
 const TraceServiceName = TraceNamespace + "." + "scheduler"
-const TracerName = "github.com/ice-scheduler/scheduler"
+const TracerName = "scheduler"
 
-func Configure(ctx context.Context, env runtime2.Env) (shutdown func(context.Context) error, err error) {
+func Configure(ctx context.Context, env runtime.Env) (shutdown func(context.Context) error, err error) {
+	// Disabling of the OpenTelemetry SDK
+	// Not implemented yet: https://github.com/open-telemetry/opentelemetry-go/issues/3559
+	if os.Getenv("OTEL_SDK_DISABLED") == "true" {
+		return
+	}
+
 	r, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(

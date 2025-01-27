@@ -1,4 +1,4 @@
-module github.com/ice-scheduler/scheduler
+module github.com/3lvia/ice-scheduler/scheduler
 
 go 1.23.4
 

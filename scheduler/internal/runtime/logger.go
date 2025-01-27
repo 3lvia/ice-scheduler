@@ -10,16 +10,20 @@ import (
 )
 
 func NewLogger(env Env) *slog.Logger {
-	var handler slog.Handler
-	handler = otelslog.NewHandler("scheduler", otelslog.WithLoggerProvider(global.GetLoggerProvider()))
+	var handlers []slog.Handler
 
 	if env == Development {
-		handler = slogmulti.Fanout(handler, slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		handlers = append(handlers, slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		}))
 	}
 
-	logger := slog.New(handler)
+	// Disable OpenTelemetry logging if the environment variable is set
+	if os.Getenv("OTEL_SDK_DISABLED") != "true" {
+		handlers = append(handlers, otelslog.NewHandler("scheduler", otelslog.WithLoggerProvider(global.GetLoggerProvider())))
+	}
+
+	logger := slog.New(slogmulti.Fanout(handlers...))
 	slog.SetDefault(logger)
 
 	return logger
