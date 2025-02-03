@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ice-scheduler/scheduler/internal/runtime"
+	"github.com/3lvia/ice-scheduler/scheduler/internal/runtime"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 )

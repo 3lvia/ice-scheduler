@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ice-scheduler/scheduler/api"
-	"github.com/ice-scheduler/scheduler/config"
-	"github.com/ice-scheduler/scheduler/internal/observability"
-	"github.com/ice-scheduler/scheduler/internal/runtime"
-	"github.com/ice-scheduler/scheduler/scheduler"
+	"github.com/3lvia/ice-scheduler/scheduler/api"
+	"github.com/3lvia/ice-scheduler/scheduler/config"
+	"github.com/3lvia/ice-scheduler/scheduler/internal/observability"
+	"github.com/3lvia/ice-scheduler/scheduler/internal/runtime"
+	"github.com/3lvia/ice-scheduler/scheduler/scheduler"
 	"github.com/nats-io/nats.go"
 )
 

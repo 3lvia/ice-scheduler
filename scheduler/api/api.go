@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/3lvia/ice-scheduler/scheduler/api/problemdetails"
+	"github.com/3lvia/ice-scheduler/scheduler/internal/runtime"
 	"github.com/gin-gonic/gin"
-	"github.com/ice-scheduler/scheduler/api/problemdetails"
-	"github.com/ice-scheduler/scheduler/internal/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	sloggin "github.com/samber/slog-gin"
 )
