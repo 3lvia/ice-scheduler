@@ -50,7 +50,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-          cache-dependency-path: ${{ github.workspace }}/go.sum
+          cache-dependency-path: scheduler.go/go.sum
       - name: Install Go packages
         run: |
           go mod download
@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Go-results-${{ matrix.go-version }}
-          path: ${{ github.workspace }}/tests-${{ matrix.go-version }}.json
+          path: scheduler.go/tests-${{ matrix.go-version }}.json
       - name: Prepare Test Report
         run: go-ctrf-json-reporter -o ${{ github.workspace }}/ctrf-${{ matrix.go-version }}.json < tests-${{ matrix.go-version }}.json
         if: always()
