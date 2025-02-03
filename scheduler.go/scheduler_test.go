@@ -54,8 +54,7 @@ func TestClient(t *testing.T) {
 
 	name := "scheduler_test"
 
-	scheduler, err := New(nc)
-	require.NoError(t, err)
+	scheduler := New(nc)
 
 	t.Run("Should be able to install and uninstall", func(t *testing.T) {
 		t.Parallel()
@@ -92,7 +91,7 @@ func TestClient(t *testing.T) {
 			_ = su.Unsubscribe()
 		})
 
-		err = scheduler.Install(ctx, name, time.Now(), nil)
+		err = scheduler.Install(ctx, name, "test", time.Now())
 		require.NoError(t, err)
 
 		err = scheduler.Uninstall(ctx, name)
