@@ -2,14 +2,17 @@ package scheduler
 
 import "time"
 
+// Infinite is a constant to indicate that the message should be sent indefinitely.
+const Infinite = -1
+
 // RepeatPolicy is the policy for repeating messages.
 type RepeatPolicy struct {
 	// Interval is the time between each message.
 	Interval time.Duration `json:"interval"`
 
 	// Times is the number of times the message should be sent.
-	// If Times is 0, the message is sent indefinitely.
-	Times uint `json:"times"`
+	// If Times is negative, the message is sent indefinitely.
+	Times int `json:"times"`
 }
 
 // ScheduledMessage is the data transfer object for the scheduled messages.
