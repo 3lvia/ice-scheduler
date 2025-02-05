@@ -91,7 +91,7 @@ func TestClient(t *testing.T) {
 			_ = su.Unsubscribe()
 		})
 
-		err = scheduler.Install(ctx, name, "test", time.Now())
+		err = scheduler.Install(ctx, name, "test")
 		require.NoError(t, err)
 
 		err = scheduler.Uninstall(ctx, name)

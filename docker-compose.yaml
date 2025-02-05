@@ -11,7 +11,7 @@ services:
   scheduler:
     build:
       context: scheduler
-      dockerfile: scheduler/Dockerfile
+      dockerfile: Dockerfile
     depends_on:
       - nats
     ports:

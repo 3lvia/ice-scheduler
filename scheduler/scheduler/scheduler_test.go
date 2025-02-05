@@ -40,7 +40,7 @@ func bootstrapNATS(t *testing.T, ctx context.Context) (*nats.Conn, jetstream.Jet
 	return nc, js
 }
 
-func TestWithNATS(t *testing.T) {
+func Test_Scheduler(t *testing.T) {
 	ctx := context.Background()
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
@@ -49,7 +49,9 @@ func TestWithNATS(t *testing.T) {
 
 	nc, _ := bootstrapNATS(t, ctx)
 
-	scheduler, err := New(ctx, nc)
+	store := NewMemoryStore()
+
+	scheduler, err := New(ctx, nc, WithMinInterval(1*time.Second), WithStore(store))
 	require.NoError(t, err)
 
 	cleanup, err := scheduler.Start()
@@ -71,9 +73,9 @@ func TestWithNATS(t *testing.T) {
 
 		expectedTime := time.Now().Add(2 * time.Second)
 		schedulerMsg := ScheduledMessage{
-			Name:    "test_1",
+			Name:    "delayed_message",
 			Subject: "test.1",
-			At:      expectedTime,
+			At:      &expectedTime,
 			Payload: []byte("hello"),
 		}
 
@@ -104,9 +106,9 @@ func TestWithNATS(t *testing.T) {
 
 		expectedTime := time.Now()
 		schedulerMsg := ScheduledMessage{
-			Name:    "test_2",
+			Name:    "send_immediately",
 			Subject: "test.2",
-			At:      expectedTime,
+			At:      &expectedTime,
 			Payload: []byte("hello"),
 		}
 
@@ -137,13 +139,13 @@ func TestWithNATS(t *testing.T) {
 		const expectedResult = 3
 
 		schedulerMsg := ScheduledMessage{
-			Name:    "test_3",
+			Name:    "resheduled_message",
 			Subject: "test.3",
-			At:      time.Now(),
+			At:      nil,
 			Payload: []byte("hello"),
 			RepeatPolicy: &RepeatPolicy{
 				Times:    expectedResult - 1,
-				Interval: 5 * time.Second,
+				Interval: 2 * time.Second,
 			},
 		}
 
@@ -160,7 +162,7 @@ func TestWithNATS(t *testing.T) {
 		}
 	})
 
-	t.Run("Scheduled message with same name should update the existing message", func(t *testing.T) {
+	t.Run("Scheduled message with updated rev should update the existing message", func(t *testing.T) {
 		t.Parallel()
 
 		resultChan := make(chan *nats.Msg, 1)
@@ -174,29 +176,19 @@ func TestWithNATS(t *testing.T) {
 
 		expectedTime := time.Now().Add(2 * time.Second)
 		schedulerMsg := ScheduledMessage{
-			Name:    "test_4",
+			Name:    "updated_rev",
 			Subject: "test.4",
-			At:      expectedTime,
+			At:      &expectedTime,
 			Payload: []byte("hello"),
 		}
 
 		err = scheduler.installSchedule(ctx, &schedulerMsg)
 		require.NoError(t, err)
 
-		// schedulerMsgBytes, err := json.Marshal(schedulerMsg)
-		// require.NoError(t, err)
-		//
-		// _, err = js.Publish(ctx, "scheduled.test.4", schedulerMsgBytes)
-		// require.NoError(t, err)
-
 		// Update the message
-		schedulerMsg.At = time.Now().Add(3 * time.Second)
 		schedulerMsg.Payload = []byte("world")
 		schedulerMsg.Rev = 1
-		// schedulerMsgBytes, err = json.Marshal(schedulerMsg)
-		// require.NoError(t, err)
 
-		// _, err = js.Publish(ctx, "scheduled.test.4", schedulerMsgBytes)
 		err = scheduler.installSchedule(ctx, &schedulerMsg)
 		require.NoError(t, err)
 
@@ -208,44 +200,91 @@ func TestWithNATS(t *testing.T) {
 		}
 	})
 
-	// t.Run("Update message with same revision should fail", func(t *testing.T) {
-	// 	t.Parallel()
-	//
-	// 	resultChan := make(chan *nats.Msg, 1)
-	// 	sub, err := nc.Subscribe("test.5", func(msg *nats.Msg) {
-	// 		resultChan <- msg
-	// 	})
-	// 	require.NoError(t, err)
-	// 	t.Cleanup(func() {
-	// 		_ = sub.Unsubscribe()
-	// 	})
-	//
-	// 	expectedTime := time.Now().Add(2 * time.Second)
-	// 	schedulerMsg := ScheduledMessage{
-	// 		Name:    "test_5",
-	// 		At:      expectedTime,
-	// 		Payload: []byte("hello"),
-	// 	}
-	//
-	// 	schedulerMsgBytes, err := json.Marshal(schedulerMsg)
-	// 	require.NoError(t, err)
-	//
-	// 	_, err = js.Publish(ctx, "scheduled.test.5", schedulerMsgBytes)
-	// 	require.NoError(t, err)
-	//
-	// 	// Update the message
-	// 	schedulerMsg.Payload = []byte("world")
-	// 	schedulerMsg.Rev = 0
-	// 	schedulerMsgBytes, err = json.Marshal(schedulerMsg)
-	// 	require.NoError(t, err)
-	//
-	// 	_, err = js.Publish(ctx, "scheduled.test.5", schedulerMsgBytes)
-	//
-	// 	select {
-	// 	case msg := <-resultChan:
-	// 		require.Equal(t, "hello", string(msg.Data))
-	// 	case <-time.After(5 * time.Second):
-	// 		t.Fatal("timed out waiting for message")
-	// 	}
-	// })
+	t.Run("Update message with same revision should fail", func(t *testing.T) {
+		t.Parallel()
+
+		resultChan := make(chan *nats.Msg, 1)
+		sub, err := nc.Subscribe("test.5", func(msg *nats.Msg) {
+			resultChan <- msg
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			_ = sub.Unsubscribe()
+		})
+
+		expectedTime := time.Now().Add(2 * time.Second)
+		schedulerMsg := ScheduledMessage{
+			Name:    "failing_rev",
+			Subject: "test.5",
+			At:      &expectedTime,
+			Payload: []byte("hello"),
+		}
+
+		err = scheduler.installSchedule(ctx, &schedulerMsg)
+		require.NoError(t, err)
+
+		// Update the message
+		schedulerMsg.Payload = []byte("world")
+		schedulerMsg.Rev = 0
+
+		err = scheduler.installSchedule(ctx, &schedulerMsg)
+		require.Error(t, err)
+
+		select {
+		case msg := <-resultChan:
+			require.Equal(t, "hello", string(msg.Data))
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for message")
+		}
+	})
+
+	t.Run("Old messages with repeat interval should trigger only once", func(t *testing.T) {
+		t.Parallel()
+
+		// The message is scheduled to be sent every 4 seconds
+		// The message was scheduled 1 minute and 2 seconds ago
+		// The scheduler corrects for old At times and sends the after (At-startTime+Interval) time
+		// The message should be sent after 2 seconds
+		// Then again after 4 seconds
+		expectedReceived := 2
+
+		offset := 2 * time.Second
+		oldAt := time.Now().Add(-1 * time.Minute).Add(-offset)
+		oldMessage := ScheduledMessage{
+			Name:    "old_message",
+			Subject: "old.1",
+			Rev:     0,
+			At:      &oldAt,
+			RepeatPolicy: &RepeatPolicy{
+				Times:    Infinite,
+				Interval: 4 * time.Second,
+			},
+		}
+		fp, err := fingerprint(&oldMessage)
+		require.NoError(t, err)
+
+		err = store.Put(ctx, oldMessage.Name, &StoredMessage{
+			Fingerprint:      fp,
+			ScheduledMessage: oldMessage,
+			State:            NewState(oldMessage),
+		})
+		require.NoError(t, err)
+
+		numReceived := 0
+		sub, err := nc.Subscribe("old.1", func(msg *nats.Msg) {
+			numReceived++
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			_ = sub.Unsubscribe()
+		})
+
+		err = scheduler.publishToScheduleStream(ctx, &oldMessage)
+		require.NoError(t, err)
+
+		select {
+		case <-time.After(oldMessage.RepeatPolicy.Interval * 2):
+			require.Equal(t, expectedReceived, numReceived)
+		}
+	})
 }

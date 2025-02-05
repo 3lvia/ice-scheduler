@@ -14,6 +14,14 @@ func WithRev(rev uint32) InstallOpt {
 	}
 }
 
+// WithAt sets the time the scheduled message should be sent.
+// If the time is not set, the message is sent immediately.
+func WithAt(at time.Time) InstallOpt {
+	return func(s *ScheduledMessage) {
+		s.At = &at
+	}
+}
+
 // WithPayload sets the payload of the scheduled message.
 func WithPayload(payload []byte) InstallOpt {
 	return func(s *ScheduledMessage) {

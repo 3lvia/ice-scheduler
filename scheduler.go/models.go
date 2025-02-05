@@ -28,8 +28,8 @@ type ScheduledMessage struct {
 	Subject string `json:"subject"`
 
 	// At the time which the message should be sent.
-	// When the time is in the past, the message is sent immediately.
-	At time.Time `json:"at"`
+	// If the time is not set, the message is sent immediately.
+	At *time.Time `json:"at"`
 
 	// RepeatPolicy is policy for which the message should be repeated.
 	// If RepeatPolicy is nil, the message is sent once.

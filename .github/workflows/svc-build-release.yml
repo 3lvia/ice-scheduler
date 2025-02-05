@@ -89,8 +89,8 @@ jobs:
           name: ${{ env.APPLICATION_NAME }}
           namespace: ${{ env.SYSTEM_NAME }}
           project-file: ${{ env.PROJECT_PATH }}/${{ env.PROJECT_FILE }}
-          trivy-upload-report: 'false'
-          trivy-post-comment: 'false'
+          trivy-upload-report: 'true'
+          trivy-post-comment: 'true'
           AZURE_CLIENT_ID: ${{ vars.ACR_CLIENT_ID }}
 
   deploy-dev:
