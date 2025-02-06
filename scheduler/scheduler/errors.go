@@ -3,12 +3,18 @@ package scheduler
 import "errors"
 
 var (
+	ErrFailedToUnmarshal = errors.New("failed to unmarshal message")
+	ErrFailedToMarshal   = errors.New("failed to marshal message")
+	ErrFailedToInstall   = errors.New("failed to install schedule")
+	ErrFailedToUninstall = errors.New("failed to uninstall schedule")
+	ErrFailedToPublish   = errors.New("failed to publish message")
+
 	ErrKeyNotFound         = errors.New("key not found")
 	ErrFailedToFingerprint = errors.New("failed to fingerprint message")
 
-	ErrInvalidName     = errors.New("invalid name")
-	ErrInvalidSubject  = errors.New("invalid subject")
-	ErrInvalidInterval = errors.New("invalid interval")
+	ErrInvalidName     = errors.New("the name can only be alphanumeric, underscore or hyphen")
+	ErrInvalidSubject  = errors.New("the subject must follow NATS subject rules")
+	ErrInvalidInterval = errors.New("the repeat interval is too short")
 
 	ErrRevisionConflict    = errors.New("revision conflict")
 	ErrFingerprintConflict = errors.New("fingerprint conflict")

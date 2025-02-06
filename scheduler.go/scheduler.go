@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/3lvia/ice-scheduler/scheduler.go/tracemsg"
 	"github.com/nats-io/nats.go"
@@ -28,12 +27,11 @@ func New(nc *nats.Conn) *Scheduler {
 // subject is the subject the message will be published to.
 // at is the time the message should be sent.
 // Use InstallOpt to set additional options.
-func (c *Scheduler) Install(ctx context.Context, name string, subject string, at time.Time, opts ...InstallOpt) error {
+func (c *Scheduler) Install(ctx context.Context, name string, subject string, opts ...InstallOpt) error {
 	s := ScheduledMessage{
 		Name:    name,
 		Subject: subject,
 		Rev:     0,
-		At:      at,
 	}
 
 	for _, opt := range opts {
@@ -56,7 +54,7 @@ func (c *Scheduler) Install(ctx context.Context, name string, subject string, at
 
 	if resp.Header.Get("status") != "ok" {
 		reason := resp.Header.Get("reason")
-		return errors.Join(ErrInstallFailed, errors.New(reason))
+		return errors.New(reason)
 	}
 
 	return nil
@@ -74,7 +72,7 @@ func (c *Scheduler) Uninstall(ctx context.Context, name string) error {
 
 	if resp.Header.Get("status") != "ok" {
 		reason := resp.Header.Get("reason")
-		return errors.Join(ErrorUninstallFailed, errors.New(reason))
+		return errors.New(reason)
 	}
 
 	return nil

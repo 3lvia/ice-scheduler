@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/3lvia/ice-scheduler/scheduler/internal/observability"
@@ -24,16 +26,57 @@ const (
 	UninstallSubject = "scheduler.uninstall.*"
 )
 
+type Opt func(*Config)
+
+type Config struct {
+	Store       Store
+	MinInterval time.Duration
+}
+
+func defaultConfig() Config {
+	return Config{
+		Store:       nil,
+		MinInterval: 1 * time.Minute,
+	}
+}
+
+func WithStore(store Store) Opt {
+	return func(cfg *Config) {
+		cfg.Store = store
+	}
+}
+
+func WithMinInterval(minInterval time.Duration) Opt {
+	return func(cfg *Config) {
+		cfg.MinInterval = minInterval
+	}
+}
+
 type Scheduler struct {
 	nc        *nats.Conn
 	js        jetstream.JetStream
 	consumer  jetstream.Consumer
 	tracer    trace.Tracer
-	store     *Store
+	store     Store
 	installer *Installer
+
+	startTime time.Time
 }
 
-func New(ctx context.Context, nc *nats.Conn) (*Scheduler, error) {
+func New(ctx context.Context, nc *nats.Conn, opts ...Opt) (*Scheduler, error) {
+	cfg := defaultConfig()
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	if cfg.Store == nil {
+		var err error
+		cfg.Store, err = NewJetstreamStore(ctx, nc)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	js, err := jetstream.New(nc)
 	if err != nil {
 		return nil, err
@@ -61,18 +104,14 @@ func New(ctx context.Context, nc *nats.Conn) (*Scheduler, error) {
 		return nil, err
 	}
 
-	store, err := NewStore(ctx, js)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Scheduler{
 		nc:        nc,
 		js:        js,
 		consumer:  consumer,
 		tracer:    otel.Tracer(observability.TraceServiceName),
-		store:     store,
-		installer: NewInstaller(store),
+		store:     cfg.Store,
+		installer: NewInstaller(cfg.Store, cfg.MinInterval),
+		startTime: time.Now(),
 	}, nil
 }
 
@@ -80,30 +119,43 @@ func (s *Scheduler) install(ctx context.Context, msg *nats.Msg) error {
 	var scheduledMsg ScheduledMessage
 	err := json.Unmarshal(msg.Data, &scheduledMsg)
 	if err != nil {
-		return errors.Join(errors.New("failed to unmarshal message"), err)
+		return errors.Join(ErrFailedToUnmarshal, err)
 	}
 
 	return s.installSchedule(ctx, &scheduledMsg)
 }
 
 func (s *Scheduler) installSchedule(ctx context.Context, scheduledMsg *ScheduledMessage) error {
-	err := s.installer.Install(ctx, scheduledMsg)
+	updated, err := s.installer.Install(ctx, scheduledMsg)
 	if err != nil {
-		return errors.Join(errors.New("failed to install message"), err)
+		return errors.Join(ErrFailedToInstall, err)
+	}
+
+	if !updated {
+		slog.InfoContext(ctx, "message already installed", "name", scheduledMsg.Name)
+		return nil
 	}
 
 	slog.InfoContext(ctx, "message installed", "name", scheduledMsg.Name, "rev", scheduledMsg.Rev)
 
-	_, err = s.js.PublishMsg(ctx, &nats.Msg{
-		Subject: "scheduled." + scheduledMsg.Name,
-	})
+	err = s.publishToScheduleStream(ctx, scheduledMsg)
 	if err != nil {
-		if err = s.store.Purge(ctx, scheduledMsg.Name); err != nil {
-			return errors.Join(errors.New("failed to publish message"), errors.New("failed to purge message from store"))
+		if err = s.installer.Uninstall(ctx, scheduledMsg.Name); err != nil {
+			return errors.Join(ErrFailedToPublish, ErrFailedToUninstall, err)
 		}
-		return errors.New("failed to publish message")
+		return ErrFailedToPublish
 	}
 	return nil
+}
+
+func (s *Scheduler) publishToScheduleStream(ctx context.Context, scheduledMsg *ScheduledMessage) error {
+	header := make(nats.Header)
+	header["rev"] = []string{fmt.Sprintf("%d", scheduledMsg.Rev)}
+	_, err := s.js.PublishMsg(ctx, &nats.Msg{
+		Subject: "scheduled." + scheduledMsg.Name,
+		Header:  header,
+	})
+	return err
 }
 
 func (s *Scheduler) uninstall(ctx context.Context, msg *nats.Msg) error {
@@ -112,7 +164,7 @@ func (s *Scheduler) uninstall(ctx context.Context, msg *nats.Msg) error {
 
 	err := s.installer.Uninstall(ctx, name)
 	if err != nil {
-		return err
+		return errors.Join(ErrFailedToUninstall, err)
 	}
 
 	slog.InfoContext(ctx, "message uninstalled", "name", name)
@@ -211,9 +263,9 @@ func (s *Scheduler) handle(ctx context.Context, msg jetstream.Msg) {
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to get message metadata", "error", err)
 
-		if err = msg.Nak(); err != nil {
-			span.SetStatus(codes.Error, "Failed to NAK message for missing metadata")
-			slog.ErrorContext(ctx, "failed to NAK message for missing metadata", "error", err)
+		if err = msg.TermWithReason("Failed to get jetstream metadata"); err != nil {
+			span.SetStatus(codes.Error, "Failed to TERM message for missing metadata")
+			slog.ErrorContext(ctx, "failed to TERM message for missing metadata", "error", err)
 		}
 		return
 	}
@@ -221,6 +273,32 @@ func (s *Scheduler) handle(ctx context.Context, msg jetstream.Msg) {
 
 	// remove the "scheduled." prefix from the name
 	name := msg.Subject()[10:]
+
+	extractRevHeader := func(header nats.Header) (uint32, error) {
+		var rev uint64
+		var revHeader []string
+		if revHeader = header["rev"]; len(revHeader) == 0 {
+			return 0, errors.New("missing rev header")
+		}
+
+		rev, err := strconv.ParseUint(revHeader[0], 10, 32)
+		if err != nil {
+			return 0, errors.New("failed to parse rev header")
+		}
+
+		return uint32(rev), nil
+	}
+
+	msgRev, err := extractRevHeader(msg.Headers())
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to parse message rev", "error", err)
+
+		if err = msg.TermWithReason("Failed to parse message rev"); err != nil {
+			span.SetStatus(codes.Error, "Failed to TERM message for missing rev")
+			slog.ErrorContext(ctx, "failed to TERM message for missing rev", "error", err)
+		}
+		return
+	}
 
 	stored, rev, err := s.store.Get(ctx, name)
 
@@ -246,7 +324,18 @@ func (s *Scheduler) handle(ctx context.Context, msg jetstream.Msg) {
 
 	scheduledMsg := stored.ScheduledMessage
 
-	delay := s.newSchedule(scheduledMsg)
+	if scheduledMsg.Rev != msgRev {
+		slog.InfoContext(ctx, "message rev mismatch, ignored", "name", scheduledMsg.Name, "storedRev", scheduledMsg.Rev, "msgRev", msgRev)
+
+		if err = msg.Ack(); err != nil {
+			span.SetStatus(codes.Error, "Failed to ACK message")
+			slog.ErrorContext(ctx, "failed to ACK message", "error", err)
+		}
+		return
+	}
+
+	s.correctStateForDowntime(&stored.State, scheduledMsg.RepeatPolicy)
+	delay := s.newSchedule(&stored.State)
 
 	// if the message is embargoed, delay it
 	if delay > 0 {
@@ -270,75 +359,56 @@ func (s *Scheduler) handle(ctx context.Context, msg jetstream.Msg) {
 	if err = s.forward(ctx, scheduledMsg.Subject, scheduledMsg.Payload); err != nil {
 		span.SetStatus(codes.Error, "Failed to publish message")
 		slog.ErrorContext(ctx, "failed to publish message", "error", err)
-		if err = msg.Nak(); err != nil {
-			span.SetStatus(codes.Error, "Failed to NAK message")
-			slog.ErrorContext(ctx, "failed to NAK message", "error", err)
-		}
 		return
 	}
 
 	// If there is no repeat policy, or this was the last repeat count, purge the message
 	// Note: a negative Times means the message is sent indefinitely
-	if scheduledMsg.RepeatPolicy == nil || scheduledMsg.RepeatPolicy.Times == 0 {
-		if err = s.store.Purge(ctx, scheduledMsg.Name); err != nil {
-			slog.ErrorContext(ctx, "failed to purge message from store", "error", err)
+	if scheduledMsg.RepeatPolicy == nil || stored.State.Times == 0 {
+		slog.InfoContext(ctx, "schedule completed, uninstalling", "name", scheduledMsg.Name)
+
+		if err = s.installer.Uninstall(ctx, scheduledMsg.Name); err != nil {
+			slog.ErrorContext(ctx, "failed to uninstall message", "error", err)
 		}
-		slog.InfoContext(ctx, "message purged", "name", scheduledMsg.Name)
 		return
 	}
 
-	rescheduledMsg, changed, err := s.reschedule(ctx, scheduledMsg, msg)
+	err = s.reschedule(ctx, scheduledMsg, stored.State, rev)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to reschedule message", "error", err)
+		span.SetStatus(codes.Error, "Failed to reschedule message")
+		slog.ErrorContext(ctx, "failed to reschedule message, uninstalling", "error", err)
+
+		// if the message could not be rescheduled, uninstall it
+		if err = s.installer.Uninstall(ctx, scheduledMsg.Name); err != nil {
+			slog.ErrorContext(ctx, "failed to uninstall message", "error", err)
+		}
 		return
 	}
-
-	if changed {
-		_, err = s.store.UpdateWithFingerprint(ctx, rescheduledMsg.Name, &rescheduledMsg, rev)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to reschedule message", "error", err)
-			if err = msg.TermWithReason("Failed to reschedule message"); err != nil {
-				span.SetStatus(codes.Error, "Failed to NAK message")
-				slog.ErrorContext(ctx, "failed to NAK message", "error", err)
-			}
-
-			// if the message could not be rescheduled, purge it
-			if err = s.store.Purge(ctx, rescheduledMsg.Name); err != nil {
-				slog.ErrorContext(ctx, "failed to purge message from store", "error", err)
-			}
-		}
-	}
-
-	slog.InfoContext(ctx, "message rescheduled", "name", rescheduledMsg.Name, "at", rescheduledMsg.At, "repeat", rescheduledMsg.RepeatPolicy)
 }
 
-func (s *Scheduler) reschedule(ctx context.Context, scheduledMsg ScheduledMessage, msg jetstream.Msg) (ScheduledMessage, bool, error) {
+func (s *Scheduler) reschedule(ctx context.Context, scheduledMsg ScheduledMessage, state State, rev uint64) error {
 	ctx, span := s.tracer.Start(ctx, "scheduler.reschedule")
 	defer span.End()
 
-	policy := scheduledMsg.RepeatPolicy
-
-	changed := false
-	if policy.Times > 0 {
-		policy.Times--
-		changed = true
-	}
-
 	// calculate the next time the message should be sent
-	// use the current At time as the base in case of network latency
-	scheduledMsg.At = scheduledMsg.At.Add(policy.Interval)
+	// use the current state time as the base in case of network latency
+	state.At = state.At.Add(scheduledMsg.RepeatPolicy.Interval)
 
-	scheduledMsgData, err := json.Marshal(scheduledMsg)
-	if err != nil {
-		return scheduledMsg, changed, err
+	// if Times started positive, decrement it
+	// but keep it above 0 since negative means infinite
+	if state.Times > 0 {
+		state.Times--
 	}
 
-	_, err = s.js.PublishMsg(ctx, &nats.Msg{
-		Subject: msg.Subject(),
-		Data:    scheduledMsgData,
-	})
+	_, err := s.installer.Update(ctx, scheduledMsg.Name, rev, &scheduledMsg, &state)
+	if err != nil {
+		return err
+	}
 
-	return scheduledMsg, changed, err
+	slog.InfoContext(ctx, "message rescheduled", "name", scheduledMsg.Name, "at", state.At, "times", state.Times)
+
+	err = s.publishToScheduleStream(ctx, &scheduledMsg)
+	return err
 }
 
 func (s *Scheduler) forward(ctx context.Context, subject string, payload []byte) error {
@@ -367,11 +437,32 @@ func (s *Scheduler) forward(ctx context.Context, subject string, payload []byte)
 	return nil
 }
 
-func (s *Scheduler) newSchedule(msg ScheduledMessage) time.Duration {
-	if time.Now().Before(msg.At) {
-		delay := msg.At.Sub(time.Now())
-		return delay
+func (s *Scheduler) correctStateForDowntime(state *State, policy *RepeatPolicy) {
+	// If there are no schedulers available to handle embargoed message, the state.At will become outdated
+	// This means, the At time could have passed
+
+	// If the At time has passed, there is a repeat policy, and we're outside the threshold,
+	// we calculate a new delay based of the startTime
+	if policy == nil {
+		return
 	}
 
+	threshold := -1 * time.Minute
+	if time.Now().Add(threshold).Before(state.At) {
+		return
+	}
+
+	// Calculate the number of intervals that have passed
+	intervals := s.startTime.Sub(state.At) / policy.Interval
+
+	// Calculate the new At based on the number of intervals that have passed
+	state.At = state.At.Add(policy.Interval*intervals + policy.Interval)
+}
+
+func (s *Scheduler) newSchedule(state *State) time.Duration {
+	if time.Now().Before(state.At) {
+		delay := state.At.Sub(time.Now())
+		return delay
+	}
 	return 0
 }
