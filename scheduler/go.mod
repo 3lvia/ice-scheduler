@@ -6,10 +6,10 @@ require (
 	github.com/3lvia/libraries-go/pkg/hashivault v0.2.3
 	github.com/gin-gonic/gin v1.10.0
 	github.com/joho/godotenv v1.5.1
-	github.com/nats-io/nats.go v1.38.0
+	github.com/nats-io/nats.go v1.39.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/samber/slog-gin v1.14.1
-	github.com/samber/slog-multi v1.3.3
+	github.com/samber/slog-multi v1.4.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go/modules/nats v0.35.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.9.0
@@ -101,7 +101,7 @@ require (
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
-	github.com/samber/lo v1.49.0 // indirect
+	github.com/samber/lo v1.49.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
