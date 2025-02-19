@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/3lvia/ice-scheduler/scheduler/internal/observability"
-	"github.com/3lvia/ice-scheduler/scheduler/internal/tracemsg"
+	"github.com/3lvia/ice-scheduler/scheduler/config"
+	"github.com/3lvia/libraries-go/pkg/elvia/tracemsg"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/otel"
@@ -108,7 +108,7 @@ func New(ctx context.Context, nc *nats.Conn, opts ...Opt) (*Scheduler, error) {
 		nc:        nc,
 		js:        js,
 		consumer:  consumer,
-		tracer:    otel.Tracer(observability.TraceServiceName),
+		tracer:    otel.Tracer(config.TracerName),
 		store:     cfg.Store,
 		installer: NewInstaller(cfg.Store, cfg.MinInterval),
 		startTime: time.Now(),
