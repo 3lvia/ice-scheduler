@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/3lvia/ice-scheduler/scheduler/internal/observability"
+	"github.com/3lvia/ice-scheduler/scheduler/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -27,7 +27,7 @@ type Installer struct {
 func NewInstaller(store Store, minInterval time.Duration) *Installer {
 	return &Installer{
 		store:       store,
-		tracer:      otel.Tracer(observability.TraceServiceName),
+		tracer:      otel.Tracer(config.TracerName),
 		minInterval: minInterval,
 	}
 }

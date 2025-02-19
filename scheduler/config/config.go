@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/3lvia/ice-scheduler/scheduler/internal/runtime"
+	"github.com/3lvia/libraries-go/pkg/elvia/runtime"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
+)
+
+const (
+	TracerName = "scheduler"
 )
 
 type Config struct {
