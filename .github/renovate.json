@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "local>3lvia/renovate-config"
+    "3lvia/renovate-config:automerge.json"
   ]
 }
