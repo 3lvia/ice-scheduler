@@ -12,23 +12,34 @@ import (
 func Test_Installer(t *testing.T) {
 	ctx := context.Background()
 
+	addStoredMessage := func(store Store, message ScheduledMessage) {
+		fp, err := fingerprint(&message)
+		require.NoError(t, err)
+
+		err = store.Put(ctx, message.Name, &StoredMessage{
+			Fingerprint:      fp,
+			ScheduledMessage: message,
+			State:            NewState(message),
+		})
+		require.NoError(t, err)
+	}
+
 	minInterval := 2 * time.Second
 
-	storedMessage := ScheduledMessage{
-		Name:    "stored_message",
+	storedMessage1 := ScheduledMessage{
+		Name:    "stored_message1",
 		Subject: "stored.1",
 		Rev:     0,
 	}
-	fp, err := fingerprint(&storedMessage)
-	require.NoError(t, err)
+	storedMessage2 := ScheduledMessage{
+		Name:    "stored_message2",
+		Subject: "stored.2",
+		Rev:     0,
+	}
 
 	store := NewMemoryStore()
-	err = store.Put(ctx, "stored_message", &StoredMessage{
-		Fingerprint:      fp,
-		ScheduledMessage: storedMessage,
-		State:            NewState(storedMessage),
-	})
-	require.NoError(t, err)
+	addStoredMessage(store, storedMessage1)
+	addStoredMessage(store, storedMessage2)
 
 	installer := NewInstaller(store, minInterval)
 
@@ -87,7 +98,7 @@ func Test_Installer(t *testing.T) {
 		{
 			name: "existing message with new rev and fingerprint should be updated",
 			msg: ScheduledMessage{
-				Name:    "stored_message",
+				Name:    storedMessage2.Name,
 				Subject: "stored.updated",
 				Rev:     1,
 			},
@@ -96,14 +107,14 @@ func Test_Installer(t *testing.T) {
 		},
 		{
 			name:    "existing message with same rev and fingerprint should not be updated",
-			msg:     storedMessage,
+			msg:     storedMessage1,
 			err:     nil,
 			updated: false,
 		},
 		{
 			name: "existing message with same rev but different fingerprint should return error",
 			msg: ScheduledMessage{
-				Name:    "stored_message",
+				Name:    storedMessage1.Name,
 				Subject: "stored.2",
 				Rev:     0,
 			},
