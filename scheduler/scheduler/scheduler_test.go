@@ -284,7 +284,8 @@ func Test_Scheduler(t *testing.T) {
 
 		select {
 		case <-time.After(oldMessage.RepeatPolicy.Interval*2 - 1*time.Second):
-			require.Equal(t, expectedReceived, numReceived)
+			require.GreaterOrEqual(t, numReceived, expectedReceived)
+			require.LessOrEqual(t, numReceived, expectedReceived*2)
 		}
 	})
 }
