@@ -47,7 +47,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: elvia-runner
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         go-version: [ '1.24.x' ]
