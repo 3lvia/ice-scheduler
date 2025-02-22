@@ -23,7 +23,7 @@ const (
 	InstallSubject = "scheduler.install"
 
 	// UninstallSubject is the subject for uninstalling a message.
-	UninstallSubject = "scheduler.uninstall.*"
+	UninstallSubject = "scheduler.uninstall.>"
 )
 
 type Opt func(*Config)
@@ -440,9 +440,9 @@ func (s *Scheduler) forward(ctx context.Context, subject string, payload []byte)
 func (s *Scheduler) correctStateForDowntime(state *State, policy *RepeatPolicy) {
 	// If there are no schedulers available to handle embargoed message, the state.At will become outdated
 	// This means, the At time could have passed
-
 	// If the At time has passed, there is a repeat policy, and we're outside the threshold,
 	// we calculate a new delay based of the startTime
+
 	if policy == nil {
 		return
 	}
@@ -452,11 +452,16 @@ func (s *Scheduler) correctStateForDowntime(state *State, policy *RepeatPolicy) 
 		return
 	}
 
+	// Calculate the time that has passed since the At time
+	passed := s.startTime.Sub(state.At)
+
 	// Calculate the number of intervals that have passed
-	intervals := s.startTime.Sub(state.At) / policy.Interval
+	intervals := passed / policy.Interval
 
 	// Calculate the new At based on the number of intervals that have passed
 	state.At = state.At.Add(policy.Interval*intervals + policy.Interval)
+
+	slog.Info("corrected state for downtime", "at", state.At, "passed", passed)
 }
 
 func (s *Scheduler) newSchedule(state *State) time.Duration {
