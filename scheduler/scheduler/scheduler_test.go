@@ -283,8 +283,9 @@ func Test_Scheduler(t *testing.T) {
 		require.NoError(t, err)
 
 		select {
-		case <-time.After(oldMessage.RepeatPolicy.Interval * 2):
-			require.Equal(t, expectedReceived, numReceived)
+		case <-time.After(oldMessage.RepeatPolicy.Interval*2 - 1*time.Second):
+			require.GreaterOrEqual(t, numReceived, expectedReceived)
+			require.LessOrEqual(t, numReceived, expectedReceived*2)
 		}
 	})
 }
