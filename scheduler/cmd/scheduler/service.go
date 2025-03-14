@@ -7,6 +7,7 @@ import (
 	"github.com/3lvia/ice-scheduler/scheduler/config"
 	"github.com/3lvia/ice-scheduler/scheduler/scheduler"
 	"github.com/3lvia/libraries-go/pkg/elvia"
+	"github.com/3lvia/libraries-go/pkg/elvia/probe"
 	"github.com/nats-io/nats.go"
 )
 
@@ -52,7 +53,11 @@ func NewSchedulerService(ctx context.Context, cfg *config.Config) (*SchedulerSer
 	nc, err := nats.Connect(cfg.NatsAddr,
 		nats.Token(secrets.NatsToken),
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-			slog.ErrorContext(ctx, "disconnected from nats server", "error", err)
+			if err != nil {
+				slog.ErrorContext(ctx, "disconnected from nats server", "error", err)
+			} else {
+				slog.InfoContext(ctx, "disconnected from nats server")
+			}
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			slog.InfoContext(ctx, "reconnected to nats server")
@@ -68,6 +73,33 @@ func NewSchedulerService(ctx context.Context, cfg *config.Config) (*SchedulerSer
 		slog.ErrorContext(ctx, "failed to connect to nats server", "error", err)
 		return nil, err
 	}
+	svc.RegisterShutdown(func(ctx context.Context) error {
+		if !nc.IsConnected() {
+			slog.InfoContext(ctx, "nats connection was already closed")
+			return nil
+		}
+		slog.InfoContext(ctx, "closing nats connection")
+		return nc.Drain()
+	})
+	svc.RegisterHealthCheck("nats", func() probe.HealthReport {
+		var status probe.HealthStatus
+		var err string
+		switch nc.Status() {
+		case nats.RECONNECTING:
+			status = probe.Degraded
+			err = nats.ErrConnectionReconnecting.Error()
+		case nats.CLOSED:
+			status = probe.Unhealthy
+			err = nats.ErrConnectionClosed.Error()
+		default:
+			status = probe.Healthy
+			err = ""
+		}
+		return probe.HealthReport{
+			Status: status,
+			Error:  err,
+		}
+	})
 
 	slog.InfoContext(ctx, "connected to nats server")
 
@@ -89,12 +121,11 @@ func (s *SchedulerService) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer shutdown()
+	s.Service.RegisterShutdown(shutdown)
 
 	return s.Service.Run(ctx)
 }
 
 func (s *SchedulerService) Stop(ctx context.Context) error {
-	s.nc.Close()
 	return s.Service.Stop(ctx)
 }

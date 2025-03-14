@@ -56,7 +56,9 @@ func Test_Scheduler(t *testing.T) {
 
 	cleanup, err := scheduler.Start()
 	require.NoError(t, err)
-	t.Cleanup(cleanup)
+	t.Cleanup(func() {
+		_ = cleanup(ctx)
+	})
 
 	t.Run("Future At time should be delayed before sending", func(t *testing.T) {
 		t.Parallel()

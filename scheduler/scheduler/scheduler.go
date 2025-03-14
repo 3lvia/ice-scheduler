@@ -171,7 +171,7 @@ func (s *Scheduler) uninstall(ctx context.Context, msg *nats.Msg) error {
 	return nil
 }
 
-func (s *Scheduler) Start() (func(), error) {
+func (s *Scheduler) Start() (func(context.Context) error, error) {
 	installSub, err := s.nc.Subscribe(InstallSubject, func(msg *nats.Msg) {
 		ctx := tracemsg.Extract(context.Background(), msg.Header)
 		ctx, span := s.tracer.Start(ctx, "scheduler.install")
@@ -248,10 +248,18 @@ func (s *Scheduler) Start() (func(), error) {
 		return nil, err
 	}
 
-	return func() {
-		_ = installSub.Unsubscribe()
-		_ = uninstallSub.Unsubscribe()
-		c.Stop()
+	return func(ctx context.Context) error {
+		slog.InfoContext(ctx, "shutting down scheduler")
+		var errs []error
+		if err := installSub.Drain(); err != nil {
+			errs = append(errs, err)
+		}
+		if err := uninstallSub.Drain(); err != nil {
+			errs = append(errs, err)
+		}
+		c.Drain()
+		<-c.Closed()
+		return errors.Join(errs...)
 	}, nil
 }
 
