@@ -8,7 +8,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.40.1
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go/modules/nats v0.35.0
+	github.com/testcontainers/testcontainers-go/modules/nats v0.36.0
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/trace v1.35.0
 )
@@ -32,6 +32,7 @@ require (
 	github.com/docker/docker v28.0.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/gin-contrib/sse v1.0.0 // indirect
@@ -96,9 +97,10 @@ require (
 	github.com/samber/slog-gin v1.15.0 // indirect
 	github.com/samber/slog-multi v1.4.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/testcontainers/testcontainers-go v0.35.0 // indirect
+	github.com/testcontainers/testcontainers-go v0.36.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
