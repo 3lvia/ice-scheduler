@@ -3,8 +3,8 @@ module github.com/3lvia/ice-scheduler/scheduler
 go 1.24
 
 require (
-	github.com/3lvia/libraries-go/pkg/elvia v0.0.5
-	github.com/3lvia/libraries-go/pkg/hashivault v0.2.3
+	github.com/3lvia/libraries-go/pkg/elvia v0.0.6
+	github.com/3lvia/libraries-go/pkg/hashivault v0.2.4
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.41.2
 	github.com/stretchr/testify v1.10.0
@@ -123,7 +123,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	golang.org/x/arch v0.15.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
