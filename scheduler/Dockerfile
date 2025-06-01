@@ -9,7 +9,7 @@ COPY . .
 RUN go mod download
 RUN go build -o ./out/scheduler ./cmd/scheduler/
 
-FROM alpine:3.21 AS runtime
+FROM alpine:3.22 AS runtime
 LABEL maintainer="elvia@elvia.no"
 
 RUN addgroup application-group --gid 1001 \
