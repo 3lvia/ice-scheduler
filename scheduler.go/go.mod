@@ -4,7 +4,7 @@ go 1.23.4
 
 require (
 	github.com/nats-io/nats.go v1.45.0
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go/modules/nats v0.38.0
 	go.opentelemetry.io/otel v1.37.0
 )
