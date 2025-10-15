@@ -6,7 +6,7 @@ require (
 	github.com/3lvia/libraries-go/pkg/elvia v0.0.6
 	github.com/3lvia/libraries-go/pkg/hashivault v0.2.6
 	github.com/joho/godotenv v1.5.1
-	github.com/nats-io/nats.go v1.46.1
+	github.com/nats-io/nats.go v1.47.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go/modules/nats v0.39.0
 	go.opentelemetry.io/otel v1.38.0
