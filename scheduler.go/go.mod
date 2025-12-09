@@ -6,7 +6,7 @@ require (
 	github.com/nats-io/nats.go v1.47.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go/modules/nats v0.40.0
-	go.opentelemetry.io/otel v1.38.0
+	go.opentelemetry.io/otel v1.39.0
 )
 
 require (
