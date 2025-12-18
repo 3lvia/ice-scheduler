@@ -3,7 +3,7 @@ module github.com/3lvia/ice-scheduler/scheduler.go
 go 1.24.0
 
 require (
-	github.com/nats-io/nats.go v1.47.0
+	github.com/nats-io/nats.go v1.48.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go/modules/nats v0.40.0
 	go.opentelemetry.io/otel v1.39.0
