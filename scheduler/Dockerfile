@@ -18,8 +18,8 @@ RUN addgroup application-group --gid 1001 \
     --disabled-password
 
 RUN apk add --no-cache ca-certificates apache2-utils
-RUN apk update
-RUN apk upgrade
+RUN apk update --no-cache
+RUN apk upgrade --no-cache
 
 WORKDIR /app
 COPY --from=builder /app/out .
