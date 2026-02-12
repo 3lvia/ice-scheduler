@@ -19,6 +19,12 @@ on:
       - 'scheduler/Dockerfile'
       - 'scheduler/go.mod'
       - 'scheduler/go.sum'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
 
 env:
   PROJECT_PATH: 'scheduler'
