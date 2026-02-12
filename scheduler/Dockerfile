@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26 AS builder
 LABEL maintainer="elvia@elvia.no"
 
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
@@ -17,9 +17,7 @@ RUN addgroup application-group --gid 1001 \
     --ingroup application-group \
     --disabled-password
 
-RUN apk add --no-cache ca-certificates apache2-utils
-RUN apk update --no-cache
-RUN apk upgrade --no-cache
+RUN apk add --no-cache ca-certificates apache2-utils && apk upgrade --no-cache libcrypto3 libssl3 libexpat
 
 WORKDIR /app
 COPY --from=builder /app/out .
